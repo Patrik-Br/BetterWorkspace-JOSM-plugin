@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- main map window (back) -->
+  <rect x="2" y="2" width="13" height="11" rx="1.2" fill="none" stroke="#1f6fb2" stroke-width="1.6"/>
+  <!-- secondary map window (front), tracking the same position -->
+  <rect x="8" y="10" width="14" height="11" rx="1.2" fill="#e07b26" fill-opacity="0.18" stroke="#e07b26" stroke-width="1.6"/>
+  <!-- dashed link + dots showing the tracked position shared between the two -->
+  <line x1="8.5" y1="7.5" x2="15" y2="15.5" stroke="#555555" stroke-width="1.1" stroke-dasharray="1.6 1.4" stroke-linecap="round"/>
+  <circle cx="8.5" cy="7.5" r="1.1" fill="#1f6fb2"/>
+  <circle cx="15" cy="15.5" r="1.1" fill="#e07b26"/>
+</svg>

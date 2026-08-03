@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- key head -->
+  <circle cx="7" cy="12" r="4.6" fill="none" stroke="#1f6fb2" stroke-width="1.8"/>
+  <circle cx="7" cy="12" r="1.5" fill="#1f6fb2"/>
+  <!-- key shaft and teeth -->
+  <path d="M 11.2 12 H 21" fill="none" stroke="#e07b26" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 17.5 12 V 15.2 M 20 12 V 14.4" fill="none" stroke="#e07b26" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

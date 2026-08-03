@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Plugin-Class: org.openstreetmap.josm.plugins.betterworkspace.BetterWorkspacePlugin
+Plugin-Version: 1.0.1
+Plugin-Mainversion: 19555
+Plugin-Canloadatruntime: true
+Plugin-Icon: images/betterworkspace/betterworkspace.svg
+Author: Patrik_B
+Plugin-Description: Workspace, panel, and imagery tweaks for JOSM.

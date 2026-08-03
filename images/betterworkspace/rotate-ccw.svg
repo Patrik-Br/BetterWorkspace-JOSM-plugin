@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- counter-clockwise: arc sweeps top -> left -> bottom -> right (270deg) -->
+  <path d="M 12 4.5 A 7.5 7.5 0 1 0 19.5 12"
+        fill="none" stroke="#1f6fb2" stroke-width="2.3" stroke-linecap="round"/>
+  <!-- arrowhead at the right end, pointing up = counter-clockwise direction of travel -->
+  <path d="M 19.5 7.8 L 16.9 12.4 L 22.1 12.4 Z" fill="#1f6fb2"/>
+  <!-- map square tilted counter-clockwise -->
+  <rect x="9.3" y="9.3" width="5.4" height="5.4" rx="0.6"
+        transform="rotate(-20 12 12)"
+        fill="none" stroke="#e07b26" stroke-width="1.6"/>
+</svg>
