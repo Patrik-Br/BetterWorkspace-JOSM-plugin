@@ -1,8 +1,9 @@
 Manifest-Version: 1.0
 Plugin-Class: org.openstreetmap.josm.plugins.betterworkspace.BetterWorkspacePlugin
-Plugin-Version: 1.0.1
+Plugin-Description: Adds a BetterWorkspace submenu under More Tools. Features: open a secondary map view synced to the main one, load HOT Tasking Manager task grids including private/draft projects via your API token, reorder docked side panels, load session-only TMS layers, toggle the active layer's visibility and rotate the map view.
+Plugin-Icon: images/betterworkspace/betterworkspace.svg
+Plugin-Link: https://github.com/Patrik-Br/BetterWorkspace-JOSM-plugin
 Plugin-Mainversion: 19555
 Plugin-Canloadatruntime: true
-Plugin-Icon: images/betterworkspace/betterworkspace.svg
 Author: Patrik_B
-Plugin-Description: Workspace, panel, and imagery tweaks for JOSM.
+Plugin-Version: 1.0.1
