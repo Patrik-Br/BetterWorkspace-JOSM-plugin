@@ -58,6 +58,7 @@ public class BetterWorkspacePlugin extends Plugin {
         bwMenu.add(new MultiValidationPrepAction());
         bwMenu.addSeparator();
         bwMenu.add(new QuickTmsAction());
+        bwMenu.add(new LoadEsriImageryDatesAction());
         bwMenu.add(new SecondaryMapViewAction());
         bwMenu.add(rotateCw);
         bwMenu.add(rotateCcw);

@@ -9,6 +9,7 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Toggle the visibility of the currently active layer - handy as keyboard shortcut
 - Multi-validation prep — adding tasks into todolist. (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation)
 - Quick TMS — Quickly load TMS link as imagery layer without the need of storing it in your settings
+- Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer (unlike JOSM's built-in "Show tile info", which just reports today's date for this imagery)
 - Secondary view-only map window that tracks the main view, with its own independent set of active layers.
 - Rotate the whole map view (data + imagery) clockwise/counter-clockwise
 
@@ -27,6 +28,7 @@ BetterWorkspace
 ├── Multi-validation prep (add task borders to todo)
 ├── ───────────────
 ├── Quick TMS...
+├── Load Esri Imagery Date Grid...
 ├── Secondary Map View
 ├── Rotate view clockwise
 ├── Rotate view counter-clockwise
@@ -59,6 +61,26 @@ always writes the new entry into your persisted imagery list whether you wanted 
   layer's bounds when you click Add Layer, so a later **Zoom to layer** returns you to roughly where
   you were looking instead — so add the layer while already looking at roughly the right place.
 
+## Esri Imagery Date Grid
+
+JOSM's built-in "Show tile info" reports today's date for Esri World Imagery, not when that imagery was
+actually captured. **Load Esri Imagery Date Grid...** instead queries Esri's own "Citations" footprint
+layer (the same metadata source [esri-imagery-date-finder](https://martinedoesgis.github.io/esri-imagery-date-finder/app.html)
+uses) for the current map view, and adds the footprints as a data layer - click any polygon to see its
+real acquisition date (`date`, e.g. `2025-09-06`) plus resolution, accuracy and source in the tags panel.
+
+- Scoped to the current view and capped at 50 km across - Esri's own server already caps each query at
+  100 footprints, so a much larger area would silently come back incomplete rather than heavier to fetch.
+  Zoom in and retry if asked.
+- If a (still <50 km) view is dense enough to hit that 100-footprint cap anyway, you're warned that the
+  grid is incomplete rather than shown a silently partial one.
+- Esri's undated global base mosaic ("TerraColor NextGen") is excluded server-side, so it doesn't show
+  up as one huge featureless polygon covering the whole query area.
+- Each footprint's date is also drawn directly on the map (not just in the tags panel), via a small
+  map paint style the plugin registers the first time this runs (**Preferences → Map Paint Styles** as
+  "BetterWorkspace: Esri Imagery Dates"). It only matches Esri's own field names, so it never affects
+  real OSM data - safe to leave enabled permanently, and removable from that same preferences page.
+
 ## Secondary Map View
 
 A second, view-only map window with its own checkbox list of layers, opened/closed via
@@ -86,6 +108,7 @@ implementation, and debugging.
 | `ToggleActiveLayerAction.java` | Toggle the visibility of the currently active layer |
 | `MultiValidationPrepAction.java` / `TodoBridge.java` | Select the layer-below's ways and hand them to the todo plugin |
 | `QuickTmsAction.java` / `QuickTmsDialog.java` | Preview a session-only TMS imagery layer |
+| `LoadEsriImageryDatesAction.java` | Loads Esri World Imagery's real acquisition-date footprints for the current view |
 | `SecondaryMapViewAction.java` / `SecondaryMapViewFrame.java` | A second, view-only map window |
 | `RotatingProjection.java` | Backs the rotate/reset view actions |
 | `AuthorSelectHook.java` | Adds "Select objects" to the built-in Authors panel's right-click menu |
