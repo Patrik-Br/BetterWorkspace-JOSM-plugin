@@ -10,9 +10,8 @@ import org.openstreetmap.josm.tools.I18n;
 import org.openstreetmap.josm.tools.Shortcut;
 
 /**
- * Ported from 3rdPassJOSMPlugin ("ThirdPassMM"): toggles the visibility of
- * whichever layer is currently active, without needing to find it in the
- * Layers panel.
+ * Toggles the visibility of whichever layer is currently active, without
+ * needing to find it in the Layers panel.
  */
 final class ToggleActiveLayerAction extends JosmAction {
 

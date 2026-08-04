@@ -128,7 +128,7 @@ final class LoadTmTaskGridAction extends JosmAction {
         String urlStr = TM_API + "/projects/" + projectId + "/tasks/?as_file=true&format=geojson";
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.0");
+        conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.0.1");
         String auth = TmApiToken.authorizationHeader();
         if (auth != null) {
             conn.setRequestProperty("Authorization", auth);

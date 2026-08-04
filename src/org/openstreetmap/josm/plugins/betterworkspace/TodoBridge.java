@@ -16,11 +16,10 @@ import org.openstreetmap.josm.gui.layer.OsmDataLayer;
 /**
  * Reflection bridge into the todo plugin's dialog (standard "todo" plugin or
  * this user's own Todo_patrik fork - both use the class name
- * {@code org.openstreetmap.josm.plugins.todo.TodoDialog}), ported from
- * 3rdPassJOSMPlugin's {@code TodoBridge}. Tries the modern public
- * {@code addItemsFromPrimitives} method first, falling back to simulating
- * clicks on the dialog's private "add"/"select" actions for older versions
- * that predate it.
+ * {@code org.openstreetmap.josm.plugins.todo.TodoDialog}). Tries the modern
+ * public {@code addItemsFromPrimitives} method first, falling back to
+ * simulating clicks on the dialog's private "add"/"select" actions for older
+ * versions that predate it.
  */
 final class TodoBridge {
 

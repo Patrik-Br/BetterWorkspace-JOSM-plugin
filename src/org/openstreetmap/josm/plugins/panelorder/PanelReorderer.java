@@ -1,14 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  org.openstreetmap.josm.gui.MapFrame
- *  org.openstreetmap.josm.gui.dialogs.DialogsPanel
- *  org.openstreetmap.josm.gui.dialogs.DialogsPanel$Action
- *  org.openstreetmap.josm.gui.dialogs.ToggleDialog
- *  org.openstreetmap.josm.spi.preferences.Config
- *  org.openstreetmap.josm.tools.Logging
- */
 package org.openstreetmap.josm.plugins.panelorder;
 
 import java.awt.Component;
@@ -19,14 +8,25 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.openstreetmap.josm.gui.MapFrame;
 import org.openstreetmap.josm.gui.dialogs.DialogsPanel;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
 import org.openstreetmap.josm.spi.preferences.Config;
 import org.openstreetmap.josm.tools.Logging;
 
+/**
+ * Reorders the docked {@link ToggleDialog} side panels within JOSM's
+ * {@link DialogsPanel}. JOSM core exposes no public API for changing that
+ * order, so this reaches the panel's private {@code allDialogs} field via
+ * reflection, reorders it in place, and asks the panel to relayout itself.
+ * The resulting order is persisted to JOSM's preferences and reapplied on
+ * every startup by {@link org.openstreetmap.josm.plugins.betterworkspace.BetterWorkspacePlugin}.
+ */
 public final class PanelReorderer {
+
     public static final String PREF_KEY = "panelorder.order";
+
     private static List<String> startupOrder;
 
     private PanelReorderer() {
@@ -37,102 +37,110 @@ public final class PanelReorderer {
             return null;
         }
         for (Component component : container.getComponents()) {
-            DialogsPanel dialogsPanel;
             if (component instanceof DialogsPanel) {
-                return (DialogsPanel)component;
+                return (DialogsPanel) component;
             }
-            if (!(component instanceof Container) || (dialogsPanel = PanelReorderer.findDialogsPanel((Container)component)) == null) continue;
-            return dialogsPanel;
+            if (component instanceof Container) {
+                DialogsPanel found = findDialogsPanel((Container) component);
+                if (found != null) {
+                    return found;
+                }
+            }
         }
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private static List<ToggleDialog> liveDialogList(DialogsPanel dialogsPanel) {
         try {
             Field field = DialogsPanel.class.getDeclaredField("allDialogs");
             field.setAccessible(true);
-            return (List)field.get(dialogsPanel);
-        }
-        catch (ClassCastException | ReflectiveOperationException | SecurityException exception) {
-            Logging.error((String)("PanelOrder: cannot access DialogsPanel.allDialogs - " + String.valueOf(exception)));
-            Logging.trace((Throwable)exception);
+            return (List<ToggleDialog>) field.get(dialogsPanel);
+        } catch (ClassCastException | ReflectiveOperationException | SecurityException ex) {
+            Logging.error("PanelOrder: cannot access DialogsPanel.allDialogs - " + ex);
+            Logging.trace(ex);
             return null;
         }
     }
 
     public static List<ToggleDialog> getCurrentOrder(MapFrame mapFrame) {
-        DialogsPanel dialogsPanel = PanelReorderer.findDialogsPanel((Container)mapFrame);
+        DialogsPanel dialogsPanel = findDialogsPanel(mapFrame);
         if (dialogsPanel == null || !dialogsPanel.initialized) {
-            return new ArrayList<ToggleDialog>();
+            return new ArrayList<>();
         }
-        List<ToggleDialog> list = PanelReorderer.liveDialogList(dialogsPanel);
-        return list == null ? new ArrayList<ToggleDialog>() : new ArrayList<ToggleDialog>(list);
+        List<ToggleDialog> live = liveDialogList(dialogsPanel);
+        return live == null ? new ArrayList<>() : new ArrayList<>(live);
     }
 
-    public static boolean applyOrder(MapFrame mapFrame, List<ToggleDialog> list) {
-        DialogsPanel dialogsPanel = PanelReorderer.findDialogsPanel((Container)mapFrame);
+    public static boolean applyOrder(MapFrame mapFrame, List<ToggleDialog> newOrder) {
+        DialogsPanel dialogsPanel = findDialogsPanel(mapFrame);
         if (dialogsPanel == null || !dialogsPanel.initialized) {
-            Logging.warn((String)"PanelOrder: DialogsPanel not ready, cannot apply order");
+            Logging.warn("PanelOrder: DialogsPanel not ready, cannot apply order");
             return false;
         }
-        List<ToggleDialog> list2 = PanelReorderer.liveDialogList(dialogsPanel);
-        if (list2 == null) {
+        List<ToggleDialog> live = liveDialogList(dialogsPanel);
+        if (live == null) {
             return false;
         }
-        PanelReorderer.rememberStartupOrder(list2);
-        LinkedHashSet<ToggleDialog> linkedHashSet = new LinkedHashSet<ToggleDialog>();
-        for (ToggleDialog toggleDialog : list) {
-            if (!list2.contains(toggleDialog)) continue;
-            linkedHashSet.add(toggleDialog);
+        rememberStartupOrder(live);
+
+        // Build the reordered set from newOrder, then append any dialogs that
+        // weren't in it (defensive - keeps every currently-docked dialog present
+        // even if newOrder is somehow incomplete) rather than silently dropping them.
+        LinkedHashSet<ToggleDialog> reordered = new LinkedHashSet<>();
+        for (ToggleDialog dialog : newOrder) {
+            if (live.contains(dialog)) {
+                reordered.add(dialog);
+            }
         }
-        linkedHashSet.addAll(list2);
-        if (linkedHashSet.size() != list2.size()) {
-            Logging.warn((String)"PanelOrder: dialog set mismatch, aborting reorder");
+        reordered.addAll(live);
+        if (reordered.size() != live.size()) {
+            Logging.warn("PanelOrder: dialog set mismatch, aborting reorder");
             return false;
         }
-        list2.clear();
-        list2.addAll(linkedHashSet);
+
+        live.clear();
+        live.addAll(reordered);
         try {
             dialogsPanel.reconstruct(DialogsPanel.Action.RESTORE_SAVED, null);
-        }
-        catch (RuntimeException runtimeException) {
-            Logging.error((String)("PanelOrder: relayout failed - " + String.valueOf(runtimeException)));
-            Logging.trace((Throwable)runtimeException);
+        } catch (RuntimeException ex) {
+            Logging.error("PanelOrder: relayout failed - " + ex);
+            Logging.trace(ex);
             return false;
         }
         return true;
     }
 
-    public static void saveOrder(List<ToggleDialog> list) {
-        Config.getPref().putList(PREF_KEY, list.stream().map(toggleDialog -> toggleDialog.getClass().getName()).collect(Collectors.toList()));
+    public static void saveOrder(List<ToggleDialog> order) {
+        Config.getPref().putList(PREF_KEY,
+                order.stream().map(d -> d.getClass().getName()).collect(Collectors.toList()));
     }
 
     public static boolean applySavedOrder(MapFrame mapFrame) {
-        List list = Config.getPref().getList(PREF_KEY);
-        List<ToggleDialog> list2 = PanelReorderer.getCurrentOrder(mapFrame);
-        PanelReorderer.rememberStartupOrder(list2);
-        if (list == null || list.isEmpty() || list2.isEmpty()) {
+        List<String> savedOrder = Config.getPref().getList(PREF_KEY);
+        List<ToggleDialog> current = getCurrentOrder(mapFrame);
+        rememberStartupOrder(current);
+        if (savedOrder == null || savedOrder.isEmpty() || current.isEmpty()) {
             return false;
         }
-        ArrayList<ToggleDialog> arrayList = new ArrayList<ToggleDialog>(list2);
-        arrayList.sort(Comparator.comparingInt(toggleDialog -> {
-            int n = list.indexOf(toggleDialog.getClass().getName());
-            return n >= 0 ? n : list.size() + list2.indexOf(toggleDialog);
+        List<ToggleDialog> sorted = new ArrayList<>(current);
+        sorted.sort(Comparator.comparingInt(d -> {
+            int index = savedOrder.indexOf(d.getClass().getName());
+            return index >= 0 ? index : savedOrder.size() + current.indexOf(d);
         }));
-        if (arrayList.equals(list2)) {
+        if (sorted.equals(current)) {
             return true;
         }
-        return PanelReorderer.applyOrder(mapFrame, arrayList);
+        return applyOrder(mapFrame, sorted);
     }
 
-    private static synchronized void rememberStartupOrder(List<ToggleDialog> list) {
-        if (startupOrder == null && list != null && !list.isEmpty()) {
-            startupOrder = list.stream().map(toggleDialog -> toggleDialog.getClass().getName()).collect(Collectors.toList());
+    private static synchronized void rememberStartupOrder(List<ToggleDialog> order) {
+        if (startupOrder == null && order != null && !order.isEmpty()) {
+            startupOrder = order.stream().map(d -> d.getClass().getName()).collect(Collectors.toList());
         }
     }
 
     public static synchronized List<String> getStartupOrder() {
-        return startupOrder == null ? null : new ArrayList<String>(startupOrder);
+        return startupOrder == null ? null : new ArrayList<>(startupOrder);
     }
 }
-

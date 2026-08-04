@@ -17,10 +17,9 @@ import org.openstreetmap.josm.tools.I18n;
 import org.openstreetmap.josm.tools.Shortcut;
 
 /**
- * Ported from 3rdPassJOSMPlugin ("ThirdPassMM"): prepares the layer below the
- * active one for a second/third mapping pass by selecting all its ways and
- * adding them to the todo plugin's list (via {@link TodoBridge}), so a
- * reviewer can page through task borders one by one.
+ * Prepares the layer below the active one for a second/third mapping pass by
+ * selecting all its ways and adding them to the todo plugin's list (via
+ * {@link TodoBridge}), so a reviewer can page through task borders one by one.
  */
 final class MultiValidationPrepAction extends JosmAction {
 
