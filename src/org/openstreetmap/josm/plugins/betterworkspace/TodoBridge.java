@@ -81,9 +81,9 @@ final class TodoBridge {
         try {
             Field allDialogs = MapFrame.class.getDeclaredField("allDialogs");
             allDialogs.setAccessible(true);
-            for (ToggleDialog dialog : (List<ToggleDialog>) allDialogs.get(map)) {
+            for (Object dialog : (List<?>) allDialogs.get(map)) {
                 if ("org.openstreetmap.josm.plugins.todo.TodoDialog".equals(dialog.getClass().getName())) {
-                    return dialog;
+                    return (ToggleDialog) dialog;
                 }
             }
         } catch (Exception e) {

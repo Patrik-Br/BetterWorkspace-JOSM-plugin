@@ -28,6 +28,9 @@ public final class PanelReorderer {
     public static final String PREF_KEY = "panelorder.order";
 
     private static List<String> startupOrder;
+    /** Cached, made-accessible reflective handle for {@code DialogsPanel.allDialogs} - resolving it
+     *  is the same lookup on every call (startup retries this in a loop), so it's done once. */
+    private static Field allDialogsField;
 
     private PanelReorderer() {
     }
@@ -53,9 +56,12 @@ public final class PanelReorderer {
     @SuppressWarnings("unchecked")
     private static List<ToggleDialog> liveDialogList(DialogsPanel dialogsPanel) {
         try {
-            Field field = DialogsPanel.class.getDeclaredField("allDialogs");
-            field.setAccessible(true);
-            return (List<ToggleDialog>) field.get(dialogsPanel);
+            if (allDialogsField == null) {
+                Field field = DialogsPanel.class.getDeclaredField("allDialogs");
+                field.setAccessible(true);
+                allDialogsField = field;
+            }
+            return (List<ToggleDialog>) allDialogsField.get(dialogsPanel);
         } catch (ClassCastException | ReflectiveOperationException | SecurityException ex) {
             Logging.error("PanelOrder: cannot access DialogsPanel.allDialogs - " + ex);
             Logging.trace(ex);

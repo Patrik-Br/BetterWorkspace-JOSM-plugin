@@ -1,19 +1,14 @@
 package org.openstreetmap.josm.plugins.betterworkspace;
 
-import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 
-import javax.swing.BorderFactory;
 import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
 import org.openstreetmap.josm.actions.JosmAction;
@@ -70,7 +65,7 @@ final class LoadTmTaskGridAction extends JosmAction {
         Config.getPref().put(PREF_LAST_PROJECT_ID, String.valueOf(projectId));
 
         final int id = projectId;
-        final JDialog progress = progressDialog(I18n.tr("Loading task grid for project #{0}...", String.valueOf(id)));
+        final JDialog progress = ProgressDialog.build(I18n.tr("Loading task grid for project #{0}...", String.valueOf(id)));
         SwingWorker<DataSet, Void> worker = new SwingWorker<DataSet, Void>() {
             private String errorMessage;
 
@@ -109,24 +104,9 @@ final class LoadTmTaskGridAction extends JosmAction {
         worker.execute();
     }
 
-    private static JDialog progressDialog(String message) {
-        JDialog dlg = new JDialog((java.awt.Frame) null, "BetterWorkspace – Please wait...", false);
-        dlg.setSize(380, 110);
-        dlg.setLocationRelativeTo(null);
-        dlg.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-        panel.add(new JLabel(message), BorderLayout.CENTER);
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        panel.add(bar, BorderLayout.SOUTH);
-        dlg.add(panel);
-        return dlg;
-    }
-
     private static DataSet fetchTaskGrid(int projectId) throws IOException {
         String urlStr = TM_API + "/projects/" + projectId + "/tasks/?as_file=true&format=geojson";
-        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) URI.create(urlStr).toURL().openConnection();
         conn.setRequestProperty("Accept", "application/json");
         conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.0.1");
         String auth = TmApiToken.authorizationHeader();

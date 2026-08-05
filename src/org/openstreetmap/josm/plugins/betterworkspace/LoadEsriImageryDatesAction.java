@@ -1,6 +1,5 @@
 package org.openstreetmap.josm.plugins.betterworkspace;
 
-import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.ByteArrayInputStream;
@@ -9,18 +8,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Locale;
 
-import javax.swing.BorderFactory;
 import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
 import jakarta.json.Json;
@@ -68,29 +63,35 @@ final class LoadEsriImageryDatesAction extends JosmAction {
     /**
      * Selector matches only on {@code SRC_RES}, a field name unique to Esri's Citations layer, so
      * this never touches real OSM data even though JOSM's map paint styles apply dataset-wide
-     * rather than per-layer. Text color is a user-adjustable {@code setting()}, editable from the
-     * gear icon next to this style in Preferences -&gt; Map Paint Styles.
+     * rather than per-layer. Text and line color are user-adjustable {@code setting()}s, editable
+     * from the gear icon next to this style in Preferences -&gt; Map Paint Styles.
      */
     private static final String MAPCSS_STYLE =
-            "setting::colordisplay {\n"
+            "setting::textcolor {\n"
             + "  type: color;\n"
-            + "  label: tr(\"Color used for displaying ESRI text\");\n"
-            + "  default: #000000;\n"
+            + "  label: tr(\"Color used for displaying ESRI dates text\");\n"
+            + "  default: #FFFFFF;\n"
+            + "}\n"
+            + "\n"
+            + "setting::linecolor {\n"
+            + "  type: color;\n"
+            + "  label: tr(\"Color used for displaying ESRI dates line\");\n"
+            + "  default: #FF9933;\n"
             + "}\n"
             + "\n"
             + "way[SRC_RES], relation[SRC_RES] {\n"
             + "  text: date;\n"
             + "  font-size: 18;\n"
             + "  text-position: center;\n"
-            + "  text-color: setting(\"colordisplay\");\n"
+            + "  text-color: setting(\"textcolor\");\n"
             + "  text-halo-radius: 1;\n"
             + "  text-halo-color: #000000;\n"
-            + "  color: #ffaa00;\n"
+            + "  color: setting(\"linecolor\");\n"
             + "  width: 2;\n"
             + "}\n";
     private static final String MAPCSS_STYLE_NAME = "BetterWorkspace: Esri Imagery Dates";
     /** Bump whenever {@link #MAPCSS_STYLE} changes, so already-registered installs pick up the update. */
-    private static final int MAPCSS_STYLE_VERSION = 2;
+    private static final int MAPCSS_STYLE_VERSION = 4;
     private static final String MAPCSS_STYLE_VERSION_PREF = "betterworkspace.esri.mapcss.styleversion";
 
     LoadEsriImageryDatesAction() {
@@ -120,7 +121,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
             return;
         }
 
-        final JDialog progress = progressDialog(I18n.tr("Loading Esri imagery date grid..."));
+        final JDialog progress = ProgressDialog.build(I18n.tr("Loading Esri imagery date grid..."));
         SwingWorker<DataSet, Void> worker = new SwingWorker<DataSet, Void>() {
             private String errorMessage;
             private boolean truncated;
@@ -238,7 +239,8 @@ final class LoadEsriImageryDatesAction extends JosmAction {
         appendParam(url, "returnGeometry", "true");
         appendParam(url, "f", "geojson");
 
-        HttpURLConnection conn = (HttpURLConnection) new URL(url.substring(0, url.length() - 1)).openConnection();
+        HttpURLConnection conn = (HttpURLConnection)
+                URI.create(url.substring(0, url.length() - 1)).toURL().openConnection();
         conn.setRequestProperty("Accept", "application/json");
         conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.0.1");
         conn.setConnectTimeout(15000);
@@ -268,18 +270,4 @@ final class LoadEsriImageryDatesAction extends JosmAction {
         }
     }
 
-    private static JDialog progressDialog(String message) {
-        JDialog dlg = new JDialog((java.awt.Frame) null, "BetterWorkspace – Please wait...", false);
-        dlg.setSize(380, 110);
-        dlg.setLocationRelativeTo(null);
-        dlg.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-        panel.add(new JLabel(message), BorderLayout.CENTER);
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        panel.add(bar, BorderLayout.SOUTH);
-        dlg.add(panel);
-        return dlg;
-    }
 }

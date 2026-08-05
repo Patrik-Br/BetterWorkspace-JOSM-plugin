@@ -7,9 +7,10 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Load a HOT Tasking Manager project's task grid as a data layer — including **private and draft
   projects you have access to** — via your personal TM API token.
 - Toggle the visibility of the currently active layer - handy as keyboard shortcut
-- Multi-validation prep — adding tasks into todolist. (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation)
+- Multi-validation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation)
 - Quick TMS — Quickly load TMS link as imagery layer without the need of storing it in your settings
-- Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer (unlike JOSM's built-in "Show tile info", which just reports today's date for this imagery)
+- Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer 
+  - First time you run this feature it will create "BetterWorkspace: Esri Imagery Dates" map paint style. You can right click it in the  Map Paint Styles window and change the colors in Style settings
 - Secondary view-only map window that tracks the main view, with its own independent set of active layers.
 - Rotate the whole map view (data + imagery) clockwise/counter-clockwise
 
@@ -35,6 +36,31 @@ BetterWorkspace
 └── Reset view rotation
 ```
 
+
+## External services & responsible use
+
+This plugin talks to two external HTTP APIs - the HOT Tasking Manager API and Esri's World Imagery
+"Citations" service. Both are called **only in direct response to a menu click**: nothing in this
+plugin polls, auto-refreshes, retries in a loop, or runs on any kind of timer or schedule.
+
+|  | HOT Tasking Manager | Esri World Imagery (Citations) |
+|---|---|---|
+| Triggered by | **Load HOT TM Task Grid...** | **Load Esri Imagery Date Grid...** |
+| Requests per click | 1 | 1 |
+| Query scope | One project's task grid | Current map view only |
+| Client-side size cap | n/a (a task grid is already small) | refused outright above 50 km across the view |
+| Server-side cap | n/a | Esri caps every response at 100 features (`maxRecordCount`) regardless - detected via `exceededTransferLimit` and reported to the user rather than silently shown as an incomplete grid |
+| Fields requested | n/a (task grid GeoJSON as-is) | only the 6 fields actually used, via `outFields=...` - never `outFields=*` |
+| Timeouts | 15s connect / 30s read | 15s connect / 30s read |
+| Identifies itself | `User-Agent: BetterWorkspace-JOSMPlugin/<version>` | same |
+
+The 50 km cap on the Esri query is doing two jobs at once: it keeps each request small, and it avoids
+the alternative failure mode of a large view silently coming back truncated at Esri's 100-feature limit
+and being misread as "no recent imagery here" - see [Esri Imagery Date Grid](#esri-imagery-date-grid)
+below for the full reasoning.
+
+Your HOT TM API token (see below) is the only credential this plugin ever sends anywhere, and it's only
+ever sent to the HOT Tasking Manager API itself, over HTTPS.
 
 ## HOT Tasking Manager task grid loading (private/draft projects)
 
@@ -63,8 +89,7 @@ always writes the new entry into your persisted imagery list whether you wanted 
 
 ## Esri Imagery Date Grid
 
-JOSM's built-in "Show tile info" reports today's date for Esri World Imagery, not when that imagery was
-actually captured. **Load Esri Imagery Date Grid...** instead queries Esri's own "Citations" footprint
+**Load Esri Imagery Date Grid...** queries Esri's own "Citations" footprint
 layer (the same metadata source [esri-imagery-date-finder](https://martinedoesgis.github.io/esri-imagery-date-finder/app.html)
 uses) for the current map view, and adds the footprints as a data layer - click any polygon to see its
 real acquisition date (`date`, e.g. `2025-09-06`) plus resolution, accuracy and source in the tags panel.
@@ -74,12 +99,11 @@ real acquisition date (`date`, e.g. `2025-09-06`) plus resolution, accuracy and 
   Zoom in and retry if asked.
 - If a (still <50 km) view is dense enough to hit that 100-footprint cap anyway, you're warned that the
   grid is incomplete rather than shown a silently partial one.
-- Esri's undated global base mosaic ("TerraColor NextGen") is excluded server-side, so it doesn't show
-  up as one huge featureless polygon covering the whole query area.
 - Each footprint's date is also drawn directly on the map (not just in the tags panel), via a small
   map paint style the plugin registers the first time this runs (**Preferences → Map Paint Styles** as
-  "BetterWorkspace: Esri Imagery Dates"). It only matches Esri's own field names, so it never affects
-  real OSM data - safe to leave enabled permanently, and removable from that same preferences page.
+  "BetterWorkspace: Esri Imagery Dates"). It visualise attribute "date" for any object with attribute "SRC_RES" so should be safe to leave enabled permanently
+- Text and outline color are both user-adjustable from Map Paint Styles window → right click → Style settings
+  (defaults: white `#FFFFFF` text, orange `#FF9933` outline)
 
 ## Secondary Map View
 
@@ -109,6 +133,7 @@ implementation, and debugging.
 | `MultiValidationPrepAction.java` / `TodoBridge.java` | Select the layer-below's ways and hand them to the todo plugin |
 | `QuickTmsAction.java` / `QuickTmsDialog.java` | Preview a session-only TMS imagery layer |
 | `LoadEsriImageryDatesAction.java` | Loads Esri World Imagery's real acquisition-date footprints for the current view |
+| `ProgressDialog.java` | Shared "please wait" dialog used by both HTTP-loading actions above |
 | `SecondaryMapViewAction.java` / `SecondaryMapViewFrame.java` | A second, view-only map window |
 | `RotatingProjection.java` | Backs the rotate/reset view actions |
 | `AuthorSelectHook.java` | Adds "Select objects" to the built-in Authors panel's right-click menu |
