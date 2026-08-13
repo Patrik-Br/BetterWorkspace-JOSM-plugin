@@ -4,6 +4,7 @@ import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
@@ -14,12 +15,17 @@ import org.openstreetmap.josm.data.coor.EastNorth;
 import org.openstreetmap.josm.data.coor.LatLon;
 import org.openstreetmap.josm.data.projection.Projection;
 import org.openstreetmap.josm.data.projection.ProjectionRegistry;
+import org.openstreetmap.josm.data.validation.OsmValidator;
 import org.openstreetmap.josm.gui.MainApplication;
 import org.openstreetmap.josm.gui.MapFrame;
 import org.openstreetmap.josm.gui.MapView;
 import org.openstreetmap.josm.gui.dialogs.DialogsPanel;
 import org.openstreetmap.josm.plugins.Plugin;
 import org.openstreetmap.josm.plugins.PluginInformation;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.HamletVillageTaggingMismatch;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.HighwayClassificationMismatch;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialMultiplePlaceNodes;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialWithoutHighway;
 import org.openstreetmap.josm.plugins.panelorder.ArrangePanelsDialog;
 import org.openstreetmap.josm.plugins.panelorder.PanelReorderer;
 import org.openstreetmap.josm.tools.I18n;
@@ -41,6 +47,11 @@ public class BetterWorkspacePlugin extends Plugin {
     public BetterWorkspacePlugin(PluginInformation info) {
         super(info);
 
+        OsmValidator.addTest(ResidentialMultiplePlaceNodes.class);
+        OsmValidator.addTest(HamletVillageTaggingMismatch.class);
+        OsmValidator.addTest(HighwayClassificationMismatch.class);
+        OsmValidator.addTest(ResidentialWithoutHighway.class);
+
         RotateAction rotateCw = new RotateAction("betterworkspace:rotate-cw",
                 I18n.tr("Rotate view clockwise"), "betterworkspace/rotate-cw", -ROTATE_STEP_DEG);
         RotateAction rotateCcw = new RotateAction("betterworkspace:rotate-ccw",
@@ -56,6 +67,7 @@ public class BetterWorkspacePlugin extends Plugin {
         bwMenu.add(new SetTmApiTokenAction());
         bwMenu.add(new ToggleActiveLayerAction());
         bwMenu.add(new MultiValidationPrepAction());
+        bwMenu.add(new JCheckBoxMenuItem(new ToggleThirdPassAction()));
         bwMenu.addSeparator();
         bwMenu.add(new QuickTmsAction());
         bwMenu.add(new LoadEsriImageryDatesAction());
