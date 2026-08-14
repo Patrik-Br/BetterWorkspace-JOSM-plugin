@@ -77,7 +77,7 @@ final class TodoBridge {
         }
     }
 
-    private static ToggleDialog findTodoDialog(MapFrame map) {
+    static ToggleDialog findTodoDialog(MapFrame map) {
         try {
             Field allDialogs = MapFrame.class.getDeclaredField("allDialogs");
             allDialogs.setAccessible(true);

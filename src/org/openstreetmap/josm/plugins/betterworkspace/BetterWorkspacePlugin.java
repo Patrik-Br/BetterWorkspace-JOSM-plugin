@@ -23,6 +23,7 @@ import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialMult
 import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialWithoutHighway;
 import org.openstreetmap.josm.plugins.panelorder.ArrangePanelsDialog;
 import org.openstreetmap.josm.plugins.panelorder.PanelReorderer;
+import org.openstreetmap.josm.spi.preferences.Config;
 import org.openstreetmap.josm.tools.I18n;
 import org.openstreetmap.josm.tools.ImageProvider;
 import org.openstreetmap.josm.tools.Logging;
@@ -43,6 +44,10 @@ public class BetterWorkspacePlugin extends Plugin {
         OsmValidator.addTest(HighwayClassificationMismatch.class);
         OsmValidator.addTest(ResidentialWithoutHighway.class);
         OsmValidator.addTest(OverlappingLanduseAreas.class);
+
+        // Primes the preference so it shows up in Preferences -> Advanced Preferences right
+        // away, rather than only appearing the first time TodoBehaviorSync actually reads it.
+        Config.getPref().getBoolean(TodoBehaviorSync.PREF_KEEP_DONE, true);
 
         ArrangePanelsAction arrangePanels = new ArrangePanelsAction();
 
@@ -83,6 +88,7 @@ public class BetterWorkspacePlugin extends Plugin {
         if (newFrame != null) {
             applySavedOrderWhenReady(newFrame, 20);
             AuthorSelectHook.installWhenReady(newFrame, 20);
+            TodoBehaviorSync.installWhenReady(newFrame, 120); // up to 30s - this user's JOSM loads 70+ plugins
         } else {
             SecondaryMapViewAction.closeIfOpen();
         }
