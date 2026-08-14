@@ -4,26 +4,21 @@ import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.openstreetmap.josm.actions.JosmAction;
-import org.openstreetmap.josm.data.coor.EastNorth;
-import org.openstreetmap.josm.data.coor.LatLon;
-import org.openstreetmap.josm.data.projection.Projection;
-import org.openstreetmap.josm.data.projection.ProjectionRegistry;
 import org.openstreetmap.josm.data.validation.OsmValidator;
 import org.openstreetmap.josm.gui.MainApplication;
 import org.openstreetmap.josm.gui.MapFrame;
-import org.openstreetmap.josm.gui.MapView;
 import org.openstreetmap.josm.gui.dialogs.DialogsPanel;
 import org.openstreetmap.josm.plugins.Plugin;
 import org.openstreetmap.josm.plugins.PluginInformation;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.HamletVillageTaggingMismatch;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.HighwayClassificationMismatch;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.OverlappingLanduseAreas;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialMultiplePlaceNodes;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.ResidentialWithoutHighway;
 import org.openstreetmap.josm.plugins.panelorder.ArrangePanelsDialog;
@@ -34,13 +29,9 @@ import org.openstreetmap.josm.tools.Logging;
 import org.openstreetmap.josm.tools.Shortcut;
 
 /**
- * Entry point. Builds the "More tools -&gt; BetterWorkspace" menu and wires up
- * the plugin's map-view-rotation state, which several inner actions below
- * share via {@link #applyRotation(double)}/{@link #currentTheta()}.
+ * Entry point. Builds the "More tools -&gt; BetterWorkspace" menu.
  */
 public class BetterWorkspacePlugin extends Plugin {
-
-    private static final double ROTATE_STEP_DEG = 15.0;
 
     private final JMenuItem arrangePanelsItem;
 
@@ -51,30 +42,23 @@ public class BetterWorkspacePlugin extends Plugin {
         OsmValidator.addTest(HamletVillageTaggingMismatch.class);
         OsmValidator.addTest(HighwayClassificationMismatch.class);
         OsmValidator.addTest(ResidentialWithoutHighway.class);
+        OsmValidator.addTest(OverlappingLanduseAreas.class);
 
-        RotateAction rotateCw = new RotateAction("betterworkspace:rotate-cw",
-                I18n.tr("Rotate view clockwise"), "betterworkspace/rotate-cw", -ROTATE_STEP_DEG);
-        RotateAction rotateCcw = new RotateAction("betterworkspace:rotate-ccw",
-                I18n.tr("Rotate view counter-clockwise"), "betterworkspace/rotate-ccw", ROTATE_STEP_DEG);
-        ResetAction reset = new ResetAction();
         ArrangePanelsAction arrangePanels = new ArrangePanelsAction();
 
         JMenu bwMenu = new JMenu(I18n.tr("BetterWorkspace"));
         bwMenu.setIcon(new ImageProvider("betterworkspace/betterworkspace").get());
-        arrangePanelsItem = bwMenu.add(arrangePanels);
-        bwMenu.addSeparator();
         bwMenu.add(new LoadTmTaskGridAction());
         bwMenu.add(new SetTmApiTokenAction());
         bwMenu.add(new ToggleActiveLayerAction());
         bwMenu.add(new MultiValidationPrepAction());
-        bwMenu.add(new JCheckBoxMenuItem(new ToggleThirdPassAction()));
+        bwMenu.add(new ManageValidationRulesAction());
         bwMenu.addSeparator();
         bwMenu.add(new QuickTmsAction());
         bwMenu.add(new LoadEsriImageryDatesAction());
         bwMenu.add(new SecondaryMapViewAction());
-        bwMenu.add(rotateCw);
-        bwMenu.add(rotateCcw);
-        bwMenu.add(reset);
+        bwMenu.addSeparator();
+        arrangePanelsItem = bwMenu.add(arrangePanels);
 
         // Deferred: JOSM core creates "More tools" empty and hidden (MainMenu.initialize()
         // calls moreToolsMenu.setVisible(false)) - it only becomes visible in practice
@@ -123,73 +107,6 @@ public class BetterWorkspacePlugin extends Plugin {
         });
         timer.setRepeats(false);
         timer.start();
-    }
-
-    static void applyRotation(double theta) {
-        MapFrame mapFrame = MainApplication.getMap();
-        if (mapFrame == null || mapFrame.mapView == null) {
-            return;
-        }
-        MapView mapView = mapFrame.mapView;
-        Projection currentProjection = ProjectionRegistry.getProjection();
-        Projection baseProjection = currentProjection instanceof RotatingProjection
-                ? ((RotatingProjection) currentProjection).getUnderlyingProjection()
-                : currentProjection;
-
-        EastNorth center = mapView.getCenter();
-        double scale = mapView.getScale();
-        LatLon centerLatLon = currentProjection.eastNorth2latlon(center);
-
-        Projection newProjection;
-        if (theta == 0.0) {
-            newProjection = baseProjection;
-        } else {
-            EastNorth pivot = baseProjection.latlon2eastNorth(centerLatLon);
-            newProjection = new RotatingProjection(baseProjection, theta, pivot);
-        }
-
-        ProjectionRegistry.setProjection(newProjection);
-        try {
-            mapView.zoomTo(newProjection.latlon2eastNorth(centerLatLon), scale);
-        } catch (RuntimeException ex) {
-            Logging.warn(ex);
-        }
-        mapView.repaint();
-    }
-
-    static double currentTheta() {
-        Projection projection = ProjectionRegistry.getProjection();
-        return projection instanceof RotatingProjection ? ((RotatingProjection) projection).getTheta() : 0.0;
-    }
-
-    private static final class RotateAction extends JosmAction {
-        private final double deltaDeg;
-
-        RotateAction(String toolbarId, String text, String iconName, double deltaDeg) {
-            super(text, iconName, text,
-                    Shortcut.registerShortcut(toolbarId, text, KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
-                    true, toolbarId, false);
-            this.deltaDeg = deltaDeg;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            applyRotation(currentTheta() + Math.toRadians(deltaDeg));
-        }
-    }
-
-    private static final class ResetAction extends JosmAction {
-        ResetAction() {
-            super(I18n.tr("Reset view rotation"), "betterworkspace/reset-north", I18n.tr("Reset view rotation"),
-                    Shortcut.registerShortcut("betterworkspace:reset", I18n.tr("Reset view rotation"),
-                            KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
-                    true, "betterworkspace:reset", false);
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            applyRotation(0.0);
-        }
     }
 
     private static final class ArrangePanelsAction extends JosmAction {

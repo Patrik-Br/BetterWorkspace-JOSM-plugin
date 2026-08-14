@@ -19,14 +19,15 @@ import org.openstreetmap.josm.tools.I18n;
  * O(R x H x N) — runs as a third-pass rule only.
  * Ported from MapathonQA-JOSM-plugin's SelectResidentialWithoutHighwayAction.
  */
-public class ResidentialWithoutHighway extends BwThirdPassTest {
+public class ResidentialWithoutHighway extends BwTest {
 
     private static final int CODE = 80102;
     private final List<Way> highways = new ArrayList<>();
     private DataSet dataSet;
 
     public ResidentialWithoutHighway() {
-        super(I18n.tr("BW: Residential area without a highway"),
+        super("residential-without-highway",
+              I18n.tr("BW: Residential area without a highway"),
               I18n.tr("Flags landuse=residential areas with no highway way passing through or touching them. "
                     + "Only runs in third-pass mode."));
     }

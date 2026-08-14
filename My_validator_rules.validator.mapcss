@@ -1,0 +1,132 @@
+/* {{{
+#!rule 
+
+PRI KAZDOM NAHRAVANI NA SERVER ZMAZAT KOMENTAR NA ZACIATKU (TENTO) A NA KONCI (ZATVORKY)*/
+
+meta
+{
+  title: "Missing Maps validation on HOT TM (HOT TM Validator Checker)";
+  version: "[[revision]]_[[date]]";
+  description: "Few rules mostly for flagging objects with layer tag.";
+  icon: "HOT_TM_logo.svg";
+  author: "Patrik_B";
+  link: "https://docs.google.com/document/d/1EhOof9iZ5E9yTe64IPqBy8FHSM9hC7j3MyTE9qSzt1Q/edit?usp=sharing";
+}
+
+/*
+  Building with layer tag with exception for building=roof
+*/
+*[building][building!=roof][layer]{
+  throwWarning: tr("_Fix - Building has layer tag");
+  fixRemove: "layer";
+  group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Uploaded part of taskgrid
+*/
+*[taskId][taskStatus]{
+throwError: tr("Part of project taskgrid");
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Bridge without layer tag
+*/
+*[bridge][!layer]{
+throwWarning: tr("_Fix - _Bridge is missing layer tag");
+fixAdd: "layer=1";
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Tunnel without layer tag. Added thanks to Filip009 and exception thanks to michael63
+*/
+*[tunnel][tunnel!=building_passage][!layer]{
+throwWarning: tr("_Fix - _Tunnel is missing layer tag");
+fixAdd: "layer=-1";
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Highway with layer tag with exception for tunnel and bridge. Added thanks to martien-176
+*/
+*[highway][!bridge][!tunnel][layer]{
+throwWarning: tr("_Fix - Highway has layer tag");
+fixRemove: "layer";
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Waterway with layer tag. Added thanks to martien-176
+*/
+*[waterway][!bridge][!tunnel][layer]{
+throwWarning: tr("_Fix - Waterway has layer tag");
+fixRemove: "layer";
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Node with building tag - turned off because way more often we map buildings as nodes on purpose then by mistake
+
+node[building]{
+throwWarning: tr("Node has a building tag");
+group: tr("HOT TM Validator Checker");
+}
+*/
+
+/*
+  Too short unclassified highway (highway probably having wrong tag). Added thanks to adiatmad (dinar)
+*/
+way[highway=unclassified][waylength() < 50][!bridge][!tunnel] {
+throwWarning: tr("Unclassified highway shorter than 50 meters");
+group: tr("HOT TM Validator Checker");
+}
+
+/*
+  Building with tag that is not listed in the current list of https://wiki.openstreetmap.org/wiki/Key:building 23.07.2023
+*/
+way[building][building!=apartments][building!=barracks][building!=bungalow][building!=cabin][building!=detached][building!=dormitory][building!=farm][building!=ger][building!=hotel][building!=house][building!=houseboat][building!=residential][building!=semidetached_house][building!=static_caravan][building!=stilt_house][building!=terrace][building!=tree_house][building!=commercial][building!=industrial][building!=kiosk][building!=office][building!=retail][building!=supermarket][building!=warehouse][building!=cathedral][building!=chapel][building!=church][building!=kingdom_hall][building!=monastery][building!=mosque][building!=presbytery][building!=religious][building!=shrine][building!=synagogue][building!=temple][building!=bakehouse][building!=bridge][building!=civic][building!=college][building!=fire_station][building!=government][building!=gatehouse][building!=hospital][building!=kindergarten][building!=public][building!=school][building!=toilets][building!=train_station][building!=transportation][building!=university][building!=barn][building!=conservatory][building!=cowshed][building!=farm_auxiliary][building!=greenhouse][building!=slurry_tank][building!=stable][building!=sty][building!=livestock][building!=grandstand][building!=pavilion][building!=riding_hall][building!=sports_hall][building!=stadium][building!=hangar][building!=hut][building!=shed][building!=carport][building!=garage][building!=garages][building!=parking][building!=digester][building!=service][building!=transformer_tower][building!=water_tower][building!=storage_tank][building!=silo][building!=beach_hut][building!=bunker][building!=castle][building!=construction][building!=container][building!=military][building!=roof][building!=ruins][building!=tent][building!=tower][building!=yes]{
+  throwWarning: tr("Building has incorrect tag");
+  group: tr("HOT TM Validator Checker");
+}
+
+/* When downloading MapSwipe results (HOT Tasking Manager Geometries) sometimes there are overlapping tasks. The next two rules will flag those. */
+/* Overlapping MapSwipe tasks */
+area[group_id][group_id!~/no|entrance/] ⧉ area[group_id:part][group_id:part!~/no|entrance/],
+area[group_id][group_id!~/no|entrance/] ⧉ area[group_id][group_id!~/no|entrance/] {
+  throwError: tr("MapSwipe overlapping tasks");
+    group: tr("HOT TM Validator Checker");
+}
+
+/* Task inside another task */
+*[group_id][group_id!~/no|entrance/][any(tag("layer"),"0") = any(parent_tag("layer"),"0")] ∈
+area[group_id][group_id!~/no|entrance/] {
+  throwError: tr("MapSwipe task inside task");
+    group: tr("HOT TM Validator Checker");
+}
+
+/* Two rules for overlapping landuse, created during Rutshuru campaign  */
+way[landuse] ∈ *[landuse]{
+  throwWarning: tr("Landuse inside landuse");
+    group: tr("HOT TM Validator Checker");
+}
+
+*[landuse] ⧉ *[landuse]{
+  throwWarning: tr("Overlaping landuse areas");
+    group: tr("HOT TM Validator Checker");
+}
+
+/* Sometimes mappers tag the residential area with place=* instead of using the tagging on a node/point */
+way[landuse=residential][place]{
+  throwWarning: tr("place=* attribute on residential area instead of point");
+    group: tr("HOT TM Validator Checker");
+}
+
+/* Way tagged with both building and highway */
+way[building][highway]{
+  throwWarning: tr("Building with highway attribute");
+  group: tr("HOT TM Validator Checker");
+}
+
+/* }}} */

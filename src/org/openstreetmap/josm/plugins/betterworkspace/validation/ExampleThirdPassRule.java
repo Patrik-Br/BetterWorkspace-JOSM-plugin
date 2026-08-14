@@ -8,29 +8,30 @@ import org.openstreetmap.josm.data.validation.TestError;
 import org.openstreetmap.josm.tools.I18n;
 
 /**
- * Template for a slow third-pass BetterWorkspace validation rule.
+ * Template for a slow, third-pass (off-by-default) BetterWorkspace validation rule.
  *
- * This rule only runs checks when third-pass mode is enabled via
- * More Tools → BetterWorkspace → Enable third-pass validation rules.
- * When disabled it returns instantly — no cost to regular validation.
+ * Copy this file, rename it, fill in the constructor strings, implement your logic in visit(),
+ * and:
+ *   1. Add a BwValidationConfig.BwRuleInfo entry to BwValidationConfig.RULES with a unique id
+ *      and slow=true, defaultEnabled=false.
+ *   2. Register the class in BetterWorkspacePlugin with: OsmValidator.addTest(YourRule.class);
  *
- * Copy this file, rename it, fill in the constructor strings, implement your
- * logic in visit(), and register the class in BetterWorkspacePlugin with:
+ * The user enables it individually from More Tools -> BetterWorkspace -> Manage validation
+ * rules..., under the "Third-pass (slow)" group.
  *
- *   OsmValidator.addTest(YourRule.class);
+ * IMPORTANT: every visit()/endTest() override MUST start with:  if (shouldSkip()) return;
  *
- * IMPORTANT: every visit() override MUST start with:  if (shouldSkip()) return;
- *
- * Error codes: use a unique integer per rule in the 80100-80199 range for
- * third-pass rules. Pick one that isn't already used by another rule here.
+ * Error codes: use a unique integer per rule in the 80100-80199 range for third-pass rules.
+ * Pick one that isn't already used by another rule here.
  */
-public class ExampleThirdPassRule extends BwThirdPassTest {
+public class ExampleThirdPassRule extends BwTest {
 
-    private static final int CODE = 80101;
+    private static final int CODE = 80104;
 
     public ExampleThirdPassRule() {
-        super(I18n.tr("BW: Example third-pass rule"),
-              I18n.tr("Replace this description with what the rule checks. Slow — only runs in third-pass mode."));
+        super("example-third-pass-rule",
+              I18n.tr("BW: Example third-pass rule"),
+              I18n.tr("Replace this description with what the rule checks. Slow — off by default."));
     }
 
     @Override

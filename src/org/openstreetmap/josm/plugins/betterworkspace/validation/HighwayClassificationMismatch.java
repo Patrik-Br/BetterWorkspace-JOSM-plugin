@@ -19,13 +19,14 @@ import org.openstreetmap.josm.tools.I18n;
  * O(H^2) over all highway ways — runs as a third-pass rule only.
  * Ported from MapathonQA-JOSM-plugin's SelectHighwayClassificationMismatchAction.
  */
-public class HighwayClassificationMismatch extends BwThirdPassTest {
+public class HighwayClassificationMismatch extends BwTest {
 
     private static final int CODE = 80101;
     private final List<Way> highways = new ArrayList<>();
 
     public HighwayClassificationMismatch() {
-        super(I18n.tr("BW: Highway classification mismatch"),
+        super("highway-classification-mismatch",
+              I18n.tr("BW: Highway classification mismatch"),
               I18n.tr("Flags highway ways sandwiched between end-to-end connected ways of the same "
                     + "differing classification at both endpoints. Only runs in third-pass mode."));
     }

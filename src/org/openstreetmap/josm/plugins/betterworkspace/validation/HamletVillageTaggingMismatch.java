@@ -10,7 +10,6 @@ import org.openstreetmap.josm.data.osm.DataSet;
 import org.openstreetmap.josm.data.osm.Node;
 import org.openstreetmap.josm.data.osm.Way;
 import org.openstreetmap.josm.data.validation.Severity;
-import org.openstreetmap.josm.data.validation.Test;
 import org.openstreetmap.josm.data.validation.TestError;
 import org.openstreetmap.josm.gui.progress.ProgressMonitor;
 import org.openstreetmap.josm.tools.I18n;
@@ -25,14 +24,15 @@ import org.openstreetmap.josm.tools.I18n;
  * bounding box to keep this fast on large downloads.
  * Ported from MapathonQA-JOSM-plugin's SelectHamletVillageTaggingMismatchAction.
  */
-public class HamletVillageTaggingMismatch extends Test {
+public class HamletVillageTaggingMismatch extends BwTest {
 
     private static final int CODE = 80002;
     private static final int VILLAGE_THRESHOLD = 15;
     private DataSet dataSet;
 
     public HamletVillageTaggingMismatch() {
-        super(I18n.tr("BW: Hamlet/village building count mismatch"),
+        super("hamlet-village-mismatch",
+              I18n.tr("BW: Hamlet/village building count mismatch"),
               I18n.tr("Flags place=hamlet or place=village nodes whose enclosing residential area building count "
                     + "disagrees with the classification (hamlet < 15 buildings, village >= 15 buildings)."));
     }
@@ -45,17 +45,19 @@ public class HamletVillageTaggingMismatch extends Test {
 
     @Override
     public void visit(Way w) {
+        if (shouldSkip()) return;
         if (dataSet == null) dataSet = w.getDataSet();
     }
 
     @Override
     public void visit(Node n) {
+        if (shouldSkip()) return;
         if (dataSet == null && !n.isIncomplete()) dataSet = n.getDataSet();
     }
 
     @Override
     public void endTest() {
-        if (dataSet != null) {
+        if (!shouldSkip() && dataSet != null) {
             List<BwResidentialArea> areas = BwResidentialArea.collectFromDataSet(dataSet);
 
             Set<Node> placeNodes = new HashSet<>();
