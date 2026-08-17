@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Plugin-Class: org.openstreetmap.josm.plugins.betterworkspace.BetterWorkspacePlugin
-Plugin-Description: Adds a BetterWorkspace submenu under More Tools: load HOT Tasking Manager task grids (incl. private/draft projects) via your API token, toggle the active layer's visibility, prep todo lists for multi-pass validation and keep completed items visible, manage extra landuse/highway validator checks, preview quick TMS layers, load Esri World Imagery acquisition-date grids, open a secondary synced map view, and reorder docked side panels.
+Plugin-Description: Adds a BetterWorkspace submenu under More Tools: load HOT Tasking Manager project task grids,  open a secondary synced map view, and reorder docked side panels.
 Plugin-Icon: images/betterworkspace/betterworkspace.svg
 Plugin-Link: https://github.com/Patrik-Br/BetterWorkspace-JOSM-plugin
 Plugin-Mainversion: 19555
