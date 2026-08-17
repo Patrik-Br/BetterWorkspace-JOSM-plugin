@@ -6,8 +6,8 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Load a HOT Tasking Manager project's task grid as a data layer — including **private and draft
   projects you have access to** — via your personal TM API token.
 - Toggle the visibility of the currently active layer - handy as keyboard shortcut
-- Multi-validation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation)
-- Manage validation rules — five extra validator checks (landuse/place/highway QA), individually toggled on/off, split into fast "Regular" and heavier "Possibly slow" groups.
+- Multi-validation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation) - also handy as keyboard shortcut
+- Manage validation rules — additional validator checks that wouldn't be possible using only validator rules (landuse/place/highway QA), individually toggled on/off, split into fast "Regular" and heavier "Possibly slow" groups.
 - Quick TMS — Quickly load TMS link as imagery layer without the need of storing it in your settings
 - Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer 
   - First time you run this feature it will create "BetterWorkspace: Esri Imagery Dates" map paint style. You can right click it in the  Map Paint Styles window and change the colors in Style settings
@@ -120,20 +120,18 @@ panel, switches to it, selects all its ways, hands them to the todo plugin, then
 ### Keeping completed todo items visible
 
 Normally, marking an item done in the todo plugin removes it from the list entirely. This plugin
-changes that (for the standard "todo" plugin or a compatible fork - no menu action needed, it just
-takes effect automatically once both plugins are installed) so a marked-done item instead:
+changes that so a marked-done item instead:
 
 - stays in the list, at its original position, grayed out
 - has the list automatically select and scroll to the next item
 - keeps the "done/total" count in the todo list's title accurate
 
-Opt-out via the `betterworkspace.todo.keepdone` preference (on by default) in JOSM's own
-**Preferences → Advanced Preferences** - no dedicated settings UI for this one, just a plain
-boolean you can search for and flip.
+You can turn this feature off by changing status of `betterworkspace.todo.keepdone` preference (on by default) in JOSM's own
+**Preferences → Advanced Preferences** 
 
 ## Validation rules
 
-**Manage validation rules...** opens a dialog to individually enable/disable five extra validator
+**Manage validation rules...** opens a dialog to individually enable/disable extra validator
 checks this plugin adds, grouped into:
 
 - **Regular** (fast, always cheap to run): *Residential with multiple place nodes*, *Hamlet/village
@@ -143,11 +141,8 @@ checks this plugin adds, grouped into:
   *Highway classification mismatch*, *Residential area without a highway*, *Overlapping landuse
   areas*.
 
-All five are **off by default** - turn on whichever you want from the dialog, one checkbox each,
-applied immediately, no separate Apply step. Hover a rule for its full description. They also show
-up individually in JOSM's own **Preferences → Validator** list (since they're registered as
-regular JOSM validator tests), but this dialog is the quicker way to toggle just this plugin's
-rules without hunting through every other plugin's tests mixed in there too.
+All of them are **off by default** - turn on whichever you want from the dialog, one checkbox each,
+applied immediately, no separate Apply step. Hover a rule for its full description. 
 
 ## Credits
 
