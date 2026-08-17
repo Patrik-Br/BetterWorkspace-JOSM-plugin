@@ -3,37 +3,38 @@
 Workspace tweaks for JOSM. All menu-driven features live under **More tools → BetterWorkspace**
 (each item is also a separate, shortcut-bindable, toolbar-registerable action — assign a key or add
 it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customization), in this order:
-- Arrange the docked side panels, remembered across restarts.
 - Load a HOT Tasking Manager project's task grid as a data layer — including **private and draft
   projects you have access to** — via your personal TM API token.
 - Toggle the visibility of the currently active layer - handy as keyboard shortcut
 - Multi-validation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation)
+- Manage validation rules — five extra validator checks (landuse/place/highway QA), individually toggled on/off, split into fast "Regular" and heavier "Possibly slow" groups.
 - Quick TMS — Quickly load TMS link as imagery layer without the need of storing it in your settings
 - Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer 
   - First time you run this feature it will create "BetterWorkspace: Esri Imagery Dates" map paint style. You can right click it in the  Map Paint Styles window and change the colors in Style settings
 - Secondary view-only map window that tracks the main view, with its own independent set of active layers.
-- Rotate the whole map view (data + imagery) clockwise/counter-clockwise
+- Arrange the docked side panels, remembered across restarts.
 
 Separately, it also adds a **"Select objects"** entry to the right-click menu of JOSM's built-in
-**Authors** panel (which otherwise only offers "Copy"). 
+**Authors** panel (which otherwise only offers "Copy"). If you also have the standard **todo**
+plugin (or a compatible fork) installed, marking an item done there keeps it visible in the list
+instead of removing it — see [Keeping completed todo items visible](#keeping-completed-todo-items-visible)
+below.
 
 ## Menu structure
 
 ```
 BetterWorkspace
-├── Arrange side panels...
-├── ───────────────
 ├── Load HOT TM Task Grid...
 ├── Set HOT TM API Token...
 ├── Toggle active layer visibility
 ├── Multi-validation prep (add task borders to todo)
+├── Manage validation rules...
 ├── ───────────────
 ├── Quick TMS...
 ├── Load Esri Imagery Date Grid...
 ├── Secondary Map View
-├── Rotate view clockwise
-├── Rotate view counter-clockwise
-└── Reset view rotation
+├── ───────────────
+└── Arrange side panels...
 ```
 
 
@@ -116,6 +117,38 @@ box here never changes what's shown in the main Layers panel, and vice versa.
 **Multi-validation prep** looks at the layer directly below the currently active one in the Layers
 panel, switches to it, selects all its ways, hands them to the todo plugin, then switches back. Works with the standard "todo" plugin or any compatible fork; if no matching todo dialog is found, it throws a warning instead of failing silently.
 
+### Keeping completed todo items visible
+
+Normally, marking an item done in the todo plugin removes it from the list entirely. This plugin
+changes that (for the standard "todo" plugin or a compatible fork - no menu action needed, it just
+takes effect automatically once both plugins are installed) so a marked-done item instead:
+
+- stays in the list, at its original position, grayed out
+- has the list automatically select and scroll to the next item
+- keeps the "done/total" count in the todo list's title accurate
+
+Opt-out via the `betterworkspace.todo.keepdone` preference (on by default) in JOSM's own
+**Preferences → Advanced Preferences** - no dedicated settings UI for this one, just a plain
+boolean you can search for and flip.
+
+## Validation rules
+
+**Manage validation rules...** opens a dialog to individually enable/disable five extra validator
+checks this plugin adds, grouped into:
+
+- **Regular** (fast, always cheap to run): *Residential with multiple place nodes*, *Hamlet/village
+  building count mismatch*.
+- **Possibly slow** (heavier geometry checks over many objects at once - may take noticeably longer
+  on large downloads or slower machines; handy for third-pass validation, but not limited to it):
+  *Highway classification mismatch*, *Residential area without a highway*, *Overlapping landuse
+  areas*.
+
+All five are **off by default** - turn on whichever you want from the dialog, one checkbox each,
+applied immediately, no separate Apply step. Hover a rule for its full description. They also show
+up individually in JOSM's own **Preferences → Validator** list (since they're registered as
+regular JOSM validator tests), but this dialog is the quicker way to toggle just this plugin's
+rules without hunting through every other plugin's tests mixed in there too.
+
 ## Credits
 
 This plugin was built with the help of Claude, Anthropic's AI chatbot, used throughout for design,
@@ -131,10 +164,14 @@ implementation, and debugging.
 | `SetTmApiTokenAction.java` / `TmApiToken.java` | Save/use your personal HOT TM API token |
 | `ToggleActiveLayerAction.java` | Toggle the visibility of the currently active layer |
 | `MultiValidationPrepAction.java` / `TodoBridge.java` | Select the layer-below's ways and hand them to the todo plugin |
+| `TodoBehaviorSync.java` | Keeps marked-done todo items visible instead of removed - see [Keeping completed todo items visible](#keeping-completed-todo-items-visible) |
 | `QuickTmsAction.java` / `QuickTmsDialog.java` | Preview a session-only TMS imagery layer |
 | `LoadEsriImageryDatesAction.java` | Loads Esri World Imagery's real acquisition-date footprints for the current view |
 | `ProgressDialog.java` | Shared "please wait" dialog used by both HTTP-loading actions above |
 | `SecondaryMapViewAction.java` / `SecondaryMapViewFrame.java` | A second, view-only map window |
-| `RotatingProjection.java` | Backs the rotate/reset view actions |
 | `AuthorSelectHook.java` | Adds "Select objects" to the built-in Authors panel's right-click menu |
+| `ManageValidationRulesAction.java` / `ValidationRulesDialog.java` | Dialog to toggle the validation rules below on/off |
+| `validation/BwValidationConfig.java` / `BwTest.java` | Registry, on/off persistence, and shared base class for the validation rules |
+| `validation/ResidentialMultiplePlaceNodes.java`, `HamletVillageTaggingMismatch.java`, `HighwayClassificationMismatch.java`, `ResidentialWithoutHighway.java`, `OverlappingLanduseAreas.java` | The five validation rules themselves |
+| `validation/BwResidentialArea.java` / `BwLanduseArea.java` | Shared geometry helpers (ring-stitching, point-in-polygon, hole-aware overlap) used by the rules above |
 
