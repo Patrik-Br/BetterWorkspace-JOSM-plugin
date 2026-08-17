@@ -23,7 +23,7 @@ import org.openstreetmap.josm.tools.I18n;
 
 /**
  * Lets the user individually enable/disable each BetterWorkspace validation rule, grouped into
- * "Regular" (always fast, on by default) and "Third-pass" (slower geometry checks across many
+ * "Regular" (always fast, on by default) and "Possibly slow" (slower geometry checks across many
  * primitives at once, off by default) sections. Each checkbox applies immediately - there's no
  * separate Apply step, so Close is the only button.
  */
@@ -51,9 +51,10 @@ public final class ValidationRulesDialog extends ExtendedDialog {
         for (BwRuleInfo rule : regular) content.add(ruleRow(rule));
 
         content.add(Box.createVerticalStrut(14));
-        content.add(sectionHeader(I18n.tr("Third-pass rules (slow)"),
-                I18n.tr("Heavier geometry checks over many objects at once - may noticeably slow "
-                      + "down validation on large downloads.")));
+        content.add(sectionHeader(I18n.tr("Possibly slow rules"),
+                I18n.tr("Heavier geometry checks over many objects at once - may take noticeably "
+                      + "longer on large downloads or slower machines. Handy for third-pass "
+                      + "validation, but not limited to it.")));
         for (BwRuleInfo rule : slow) content.add(ruleRow(rule));
 
         content.add(Box.createVerticalGlue());
