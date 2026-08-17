@@ -6,7 +6,7 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Load a HOT Tasking Manager project's task grid as a data layer — including **private and draft
   projects you have access to** — via your personal TM API token.
 - Toggle the visibility of the currently active layer - handy as keyboard shortcut
-- Multi-validation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation) - also handy as keyboard shortcut
+- Multivalidation prep — adding tasks into todolist (select all ways in the layer below the active one and add them to the todo plugin's list, for paging through task borders during validation) - also handy as keyboard shortcut
 - Manage validation rules — additional validator checks that wouldn't be possible using only validator rules (landuse/place/highway QA), individually toggled on/off, split into fast "Regular" and heavier "Possibly slow" groups.
 - Quick TMS — Quickly load TMS link as imagery layer without the need of storing it in your settings
 - Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer 
@@ -27,7 +27,7 @@ BetterWorkspace
 ├── Load HOT TM Task Grid...
 ├── Set HOT TM API Token...
 ├── Toggle active layer visibility
-├── Multi-validation prep (add task borders to todo)
+├── Multivalidation prep (add task borders to todo)
 ├── Manage validation rules...
 ├── ───────────────
 ├── Quick TMS...
@@ -112,9 +112,9 @@ A second, view-only map window with its own checkbox list of layers, opened/clos
 **Secondary Map View**. It stays in sync with the main view's position/zoom, but has its own independent set of which layers are shown — checking a
 box here never changes what's shown in the main Layers panel, and vice versa.
 
-## Multi-validation prep and the todo-plugin bridge
+## Multivalidation prep and the todo-plugin bridge
 
-**Multi-validation prep** looks at the layer directly below the currently active one in the Layers
+**Multivalidation prep** looks at the layer directly below the currently active one in the Layers
 panel, switches to it, selects all its ways, hands them to the todo plugin, then switches back. Works with the standard "todo" plugin or any compatible fork; if no matching todo dialog is found, it throws a warning instead of failing silently.
 
 ### Keeping completed todo items visible

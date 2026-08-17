@@ -120,7 +120,7 @@ public class BetterWorkspacePlugin extends Plugin {
             super(I18n.tr("Arrange side panels..."), "betterworkspace/arrange-panels",
                     I18n.tr("Change the top-to-bottom order of the panels docked on the right side"),
                     Shortcut.registerShortcut("betterworkspace:arrangepanels",
-                            I18n.tr("Arrange side panels..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                            I18n.tr("Arrange side panels... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                     true, "betterworkspace:arrangepanels", false);
         }
 

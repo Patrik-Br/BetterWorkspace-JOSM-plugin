@@ -23,7 +23,7 @@ final class SecondaryMapViewAction extends JosmAction {
         super(I18n.tr("Secondary Map View"), "betterworkspace/secondary-map-view",
                 I18n.tr("Open or close a second, view-only map window tracking the main view's position and zoom"),
                 Shortcut.registerShortcut("betterworkspace:secondarymapview",
-                        I18n.tr("Secondary Map View"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                        I18n.tr("Secondary Map View - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:secondarymapview", false);
     }
 

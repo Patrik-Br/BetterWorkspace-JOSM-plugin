@@ -14,7 +14,7 @@ final class ManageValidationRulesAction extends JosmAction {
         super(I18n.tr("Manage BetterWorkspace validation rules..."), "dialogs/validator",
                 I18n.tr("Enable or disable BetterWorkspace's validation rules individually"),
                 Shortcut.registerShortcut("betterworkspace:managevalidationrules",
-                        I18n.tr("Manage BetterWorkspace validation rules..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                        I18n.tr("Manage validation rules... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 false);
     }
 

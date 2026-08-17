@@ -24,10 +24,10 @@ import org.openstreetmap.josm.tools.Shortcut;
 final class MultiValidationPrepAction extends JosmAction {
 
     MultiValidationPrepAction() {
-        super(I18n.tr("Multi-validation prep (add task borders to todo)"), null,
+        super(I18n.tr("Multivalidation prep (add task borders to todo)"), null,
                 I18n.tr("Switch to layer below, select all ways, add to todo list, switch back."),
                 Shortcut.registerShortcut("betterworkspace:multivalidationprep",
-                        I18n.tr("Multi-validation prep"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                        I18n.tr("Multivalidation prep - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 false);
     }
 

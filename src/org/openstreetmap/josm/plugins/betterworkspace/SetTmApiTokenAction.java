@@ -29,7 +29,7 @@ final class SetTmApiTokenAction extends JosmAction {
         super(I18n.tr("Set HOT TM API Token..."), "betterworkspace/tm-set-token",
                 I18n.tr("Save your HOT Tasking Manager personal API token, used to load private/draft task grids"),
                 Shortcut.registerShortcut("betterworkspace:tmsettoken",
-                        I18n.tr("Set HOT TM API Token..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                        I18n.tr("Set HOT TM API Token... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:tmsettoken", false);
     }
 

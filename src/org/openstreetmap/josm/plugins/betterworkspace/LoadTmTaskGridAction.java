@@ -40,7 +40,7 @@ final class LoadTmTaskGridAction extends JosmAction {
         super(I18n.tr("Load HOT TM Task Grid..."), "betterworkspace/tm-load-taskgrid",
                 I18n.tr("Load a HOT Tasking Manager project's task grid as a data layer, including private/draft projects"),
                 Shortcut.registerShortcut("betterworkspace:tmloadtaskgrid",
-                        I18n.tr("Load HOT TM Task Grid..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                        I18n.tr("Load HOT TM Task Grid... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:tmloadtaskgrid", false);
     }
 
