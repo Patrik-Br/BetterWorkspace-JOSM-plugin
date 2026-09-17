@@ -39,31 +39,37 @@ public class BetterWorkspacePlugin extends Plugin {
     public BetterWorkspacePlugin(PluginInformation info) {
         super(info);
 
-        OsmValidator.addTest(ResidentialMultiplePlaceNodes.class);
-        OsmValidator.addTest(HamletVillageTaggingMismatch.class);
-        OsmValidator.addTest(HighwayClassificationMismatch.class);
-        OsmValidator.addTest(ResidentialWithoutHighway.class);
-        OsmValidator.addTest(OverlappingLanduseAreas.class);
+        safely("residential-multiple-place-nodes validator", () -> OsmValidator.addTest(ResidentialMultiplePlaceNodes.class));
+        safely("hamlet/village tagging mismatch validator", () -> OsmValidator.addTest(HamletVillageTaggingMismatch.class));
+        safely("highway classification mismatch validator", () -> OsmValidator.addTest(HighwayClassificationMismatch.class));
+        safely("residential without highway validator", () -> OsmValidator.addTest(ResidentialWithoutHighway.class));
+        safely("overlapping landuse areas validator", () -> OsmValidator.addTest(OverlappingLanduseAreas.class));
 
         // Primes the preference so it shows up in Preferences -> Advanced Preferences right
         // away, rather than only appearing the first time TodoBehaviorSync actually reads it.
-        Config.getPref().getBoolean(TodoBehaviorSync.PREF_KEEP_DONE, true);
-
-        ArrangePanelsAction arrangePanels = new ArrangePanelsAction();
+        safely("todo-keep-done preference priming", () -> Config.getPref().getBoolean(TodoBehaviorSync.PREF_KEEP_DONE, true));
 
         JMenu bwMenu = new JMenu(I18n.tr("BetterWorkspace"));
         bwMenu.setIcon(new ImageProvider("betterworkspace/betterworkspace").get());
-        bwMenu.add(new LoadTmTaskGridAction());
-        bwMenu.add(new SetTmApiTokenAction());
-        bwMenu.add(new ToggleActiveLayerAction());
-        bwMenu.add(new MultiValidationPrepAction());
-        bwMenu.add(new ManageValidationRulesAction());
+        safely("Load task grid menu item", () -> bwMenu.add(new LoadTmTaskGridAction()));
+        safely("Set TM API token menu item", () -> bwMenu.add(new SetTmApiTokenAction()));
+        safely("Toggle active layer menu item", () -> bwMenu.add(new ToggleActiveLayerAction()));
+        safely("Multi validation prep menu item", () -> bwMenu.add(new MultiValidationPrepAction()));
+        safely("Manage validation rules menu item", () -> bwMenu.add(new ManageValidationRulesAction()));
         bwMenu.addSeparator();
-        bwMenu.add(new QuickTmsAction());
-        bwMenu.add(new LoadEsriImageryDatesAction());
-        bwMenu.add(new SecondaryMapViewAction());
+        safely("Quick TMS menu item", () -> bwMenu.add(new QuickTmsAction()));
+        safely("Load Esri imagery dates menu item", () -> bwMenu.add(new LoadEsriImageryDatesAction()));
+        safely("Secondary map view menu item", () -> bwMenu.add(new SecondaryMapViewAction()));
         bwMenu.addSeparator();
-        arrangePanelsItem = bwMenu.add(arrangePanels);
+
+        JMenuItem arrangePanelsMenuItem = null;
+        try {
+            arrangePanelsMenuItem = bwMenu.add(new ArrangePanelsAction());
+        } catch (RuntimeException | LinkageError e) {
+            Logging.warn("BetterWorkspace: Arrange side panels menu item failed to initialize");
+            Logging.warn(e);
+        }
+        arrangePanelsItem = arrangePanelsMenuItem;
 
         // Deferred: JOSM core creates "More tools" empty and hidden (MainMenu.initialize()
         // calls moreToolsMenu.setVisible(false)) - it only becomes visible in practice
@@ -73,11 +79,11 @@ public class BetterWorkspacePlugin extends Plugin {
         // already run, so BetterWorkspace reliably lands at the bottom of the list, and we
         // explicitly show the menu ourselves so it still works with neither of those plugins
         // installed.
-        SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(() -> safely("attaching BetterWorkspace menu to More tools", () -> {
             JMenu moreTools = MainApplication.getMenu().moreToolsMenu;
             moreTools.add(bwMenu);
             moreTools.setVisible(true);
-        });
+        }));
     }
 
     @Override
@@ -86,11 +92,23 @@ public class BetterWorkspacePlugin extends Plugin {
             arrangePanelsItem.setEnabled(newFrame != null);
         }
         if (newFrame != null) {
-            applySavedOrderWhenReady(newFrame, 20);
-            AuthorSelectHook.installWhenReady(newFrame, 20);
-            TodoBehaviorSync.installWhenReady(newFrame, 120); // up to 30s - this user's JOSM loads 70+ plugins
+            safely("saved panel order", () -> applySavedOrderWhenReady(newFrame, 20));
+            safely("author-select hook", () -> AuthorSelectHook.installWhenReady(newFrame, 20));
+            // up to 30s - this user's JOSM loads 70+ plugins
+            safely("todo behavior sync", () -> TodoBehaviorSync.installWhenReady(newFrame, 120));
         } else {
-            SecondaryMapViewAction.closeIfOpen();
+            safely("secondary map view close", SecondaryMapViewAction::closeIfOpen);
+        }
+    }
+
+    // Isolates one startup step so a bug or a JOSM-core API change in it is logged and skipped
+    // instead of aborting the rest of BetterWorkspace's setup.
+    private static void safely(String what, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException | LinkageError e) {
+            Logging.warn("BetterWorkspace: " + what + " failed to initialize");
+            Logging.warn(e);
         }
     }
 
@@ -120,7 +138,7 @@ public class BetterWorkspacePlugin extends Plugin {
             super(I18n.tr("Arrange side panels..."), "betterworkspace/arrange-panels",
                     I18n.tr("Change the top-to-bottom order of the panels docked on the right side"),
                     Shortcut.registerShortcut("betterworkspace:arrangepanels",
-                            I18n.tr("Arrange side panels... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                            I18n.tr("Arrange side panels..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                     true, "betterworkspace:arrangepanels", false);
         }
 
