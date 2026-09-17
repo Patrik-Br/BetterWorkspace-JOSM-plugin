@@ -15,10 +15,12 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Arrange the docked side panels, remembered across restarts.
 
 Separately, it also adds a **"Select objects"** entry to the right-click menu of JOSM's built-in
-**Authors** panel (which otherwise only offers "Copy"). If you also have the standard **todo**
-plugin (or a compatible fork) installed, marking an item done there keeps it visible in the list
-instead of removing it — see [Keeping completed todo items visible](#keeping-completed-todo-items-visible)
-below.
+**Authors** panel (which otherwise only offers "Copy"), and a **"Create filter from Key/Value"**
+entry to the right-click menu of the **Tags/Memberships** panel, next to JOSM's own "Search
+Key/Value" — same key/value expression, but added as a new row in the Filters panel instead of
+running a search. If you also have the standard **todo** plugin (or a compatible fork) installed,
+marking an item done there keeps it visible in the list instead of removing it — see [Keeping
+completed todo items visible](#keeping-completed-todo-items-visible) below.
 
 ## Menu structure
 
@@ -145,7 +147,7 @@ checks this plugin adds, grouped into:
 - **Possibly slow** (heavier geometry checks over many objects at once - may take noticeably longer
   on large downloads or slower machines; handy for third-pass validation, but not limited to it):
   *Highway classification mismatch*, *Residential area without a highway*, *Overlapping landuse
-  areas*.
+  areas*, *Building overlapping residential landuse*.
 
 All of them are **off by default** - turn on whichever you want from the dialog, one checkbox each,
 applied immediately, no separate Apply step. Hover a rule for its full description. 
@@ -171,8 +173,9 @@ implementation, and debugging.
 | `ProgressDialog.java` | Shared "please wait" dialog used by both HTTP-loading actions above |
 | `SecondaryMapViewAction.java` / `SecondaryMapViewFrame.java` | A second, view-only map window |
 | `AuthorSelectHook.java` | Adds "Select objects" to the built-in Authors panel's right-click menu |
+| `CreateFilterFromTagAction.java` | Adds "Create filter from Key/Value" to the built-in Tags/Memberships panel's right-click menu |
 | `ManageValidationRulesAction.java` / `ValidationRulesDialog.java` | Dialog to toggle the validation rules below on/off |
 | `validation/BwValidationConfig.java` / `BwTest.java` | Registry, on/off persistence, and shared base class for the validation rules |
-| `validation/ResidentialMultiplePlaceNodes.java`, `HamletVillageTaggingMismatch.java`, `HighwayClassificationMismatch.java`, `ResidentialWithoutHighway.java`, `OverlappingLanduseAreas.java` | The five validation rules themselves |
+| `validation/ResidentialMultiplePlaceNodes.java`, `HamletVillageTaggingMismatch.java`, `HighwayClassificationMismatch.java`, `ResidentialWithoutHighway.java`, `OverlappingLanduseAreas.java`, `BuildingOverlappingResidentialArea.java` | The validation rules themselves |
 | `validation/BwResidentialArea.java` / `BwLanduseArea.java` | Shared geometry helpers (ring-stitching, point-in-polygon, hole-aware overlap) used by the rules above |
 

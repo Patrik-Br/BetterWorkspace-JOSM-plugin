@@ -67,7 +67,15 @@ final class LoadEsriImageryDatesAction extends JosmAction {
      * from the gear icon next to this style in Preferences -&gt; Map Paint Styles.
      */
     private static final String MAPCSS_STYLE =
-            "setting::textcolor {\n"
+            "meta {\n"
+            + "  title: \"BetterWorkspace: Esri Imagery Dates\";\n"
+            // Same bare, plugin-relative name as this action's own toolbar/menu icon - JOSM
+            // resolves it the same way, since it's still searching this plugin's own image
+            // directory (registered while the plugin is loaded) when it renders the style list.
+            + "  icon: \"betterworkspace/betterworkspace\";\n"
+            + "}\n"
+            + "\n"
+            + "setting::textcolor {\n"
             + "  type: color;\n"
             + "  label: tr(\"Color used for displaying ESRI dates text\");\n"
             + "  default: #FFFFFF;\n"
@@ -91,7 +99,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
             + "}\n";
     private static final String MAPCSS_STYLE_NAME = "BetterWorkspace: Esri Imagery Dates";
     /** Bump whenever {@link #MAPCSS_STYLE} changes, so already-registered installs pick up the update. */
-    private static final int MAPCSS_STYLE_VERSION = 4;
+    private static final int MAPCSS_STYLE_VERSION = 5;
     private static final String MAPCSS_STYLE_VERSION_PREF = "betterworkspace.esri.mapcss.styleversion";
 
     LoadEsriImageryDatesAction() {

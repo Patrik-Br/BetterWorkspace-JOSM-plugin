@@ -16,6 +16,7 @@ import org.openstreetmap.josm.gui.MapFrame;
 import org.openstreetmap.josm.gui.dialogs.DialogsPanel;
 import org.openstreetmap.josm.plugins.Plugin;
 import org.openstreetmap.josm.plugins.PluginInformation;
+import org.openstreetmap.josm.plugins.betterworkspace.validation.BuildingOverlappingResidentialArea;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.HamletVillageTaggingMismatch;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.HighwayClassificationMismatch;
 import org.openstreetmap.josm.plugins.betterworkspace.validation.OverlappingLanduseAreas;
@@ -44,6 +45,7 @@ public class BetterWorkspacePlugin extends Plugin {
         safely("highway classification mismatch validator", () -> OsmValidator.addTest(HighwayClassificationMismatch.class));
         safely("residential without highway validator", () -> OsmValidator.addTest(ResidentialWithoutHighway.class));
         safely("overlapping landuse areas validator", () -> OsmValidator.addTest(OverlappingLanduseAreas.class));
+        safely("building overlaps residential landuse validator", () -> OsmValidator.addTest(BuildingOverlappingResidentialArea.class));
 
         // Primes the preference so it shows up in Preferences -> Advanced Preferences right
         // away, rather than only appearing the first time TodoBehaviorSync actually reads it.
@@ -96,6 +98,7 @@ public class BetterWorkspacePlugin extends Plugin {
             safely("author-select hook", () -> AuthorSelectHook.installWhenReady(newFrame, 20));
             // up to 30s - this user's JOSM loads 70+ plugins
             safely("todo behavior sync", () -> TodoBehaviorSync.installWhenReady(newFrame, 120));
+            safely("create-filter-from-tag menu hook", () -> CreateFilterFromTagAction.install(newFrame));
         } else {
             safely("secondary map view close", SecondaryMapViewAction::closeIfOpen);
         }

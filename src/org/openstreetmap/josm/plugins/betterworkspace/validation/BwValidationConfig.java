@@ -38,6 +38,11 @@ public final class BwValidationConfig {
                     I18n.tr("Overlapping landuse areas"),
                     I18n.tr("Flags landuse=* areas whose true extents genuinely overlap, ignoring shared "
                           + "boundaries such as an area that exactly fills another area's hole."),
+                    true, false),
+            new BwRuleInfo("building-overlaps-residential-landuse",
+                    I18n.tr("Building overlapping residential landuse"),
+                    I18n.tr("Flags building=* areas whose true extent genuinely crosses the boundary of a "
+                          + "landuse=residential area"),
                     true, false));
 
     private BwValidationConfig() {}

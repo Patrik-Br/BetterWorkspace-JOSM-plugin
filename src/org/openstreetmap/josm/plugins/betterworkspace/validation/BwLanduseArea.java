@@ -15,9 +15,10 @@ import org.openstreetmap.josm.data.osm.RelationMember;
 import org.openstreetmap.josm.data.osm.Way;
 
 /**
- * A landuse=* area (any value, unlike {@link BwResidentialArea} which is residential-only)
+ * A tag=* area (any value, unlike {@link BwResidentialArea} which is residential-landuse-only)
  * from either a closed way or a multipolygon relation, keeping both outer AND inner (hole)
- * rings.
+ * rings. Despite the name, this represents any such area, not just landuse - see
+ * {@link #collectBuildings}, used for building=* areas.
  *
  * <p>Holes matter for overlap detection: a common real-world pattern is a large area (e.g.
  * landuse=farmland) with a hole cut out exactly where a separately-tagged area (e.g. a
@@ -29,16 +30,17 @@ import org.openstreetmap.josm.data.osm.Way;
 final class BwLanduseArea {
 
     final OsmPrimitive primitive;
-    final String landuse;
+    /** This area's value for whichever tag it was collected by (landuse=* or building=*). */
+    final String tagValue;
     final List<List<Node>> outerRings;
     final List<List<Node>> innerRings;
     /** Every node used by any outer or inner ring, for shared-boundary (touching, not overlapping) detection. */
     final Set<Node> boundaryNodes;
 
-    private BwLanduseArea(OsmPrimitive primitive, String landuse,
+    private BwLanduseArea(OsmPrimitive primitive, String tagValue,
             List<List<Node>> outerRings, List<List<Node>> innerRings) {
         this.primitive = primitive;
-        this.landuse = landuse;
+        this.tagValue = tagValue;
         this.outerRings = outerRings;
         this.innerRings = innerRings;
         this.boundaryNodes = new HashSet<>();
@@ -47,23 +49,32 @@ final class BwLanduseArea {
     }
 
     static List<BwLanduseArea> collectFromDataSet(DataSet ds) {
+        return collect(ds, "landuse");
+    }
+
+    /** Same collection/ring-stitching as {@link #collectFromDataSet}, keyed on building=* instead. */
+    static List<BwLanduseArea> collectBuildings(DataSet ds) {
+        return collect(ds, "building");
+    }
+
+    private static List<BwLanduseArea> collect(DataSet ds, String tagKey) {
         List<BwLanduseArea> result = new ArrayList<>();
 
         for (Way w : ds.getWays()) {
             if (w.isDeleted() || w.isIncomplete()) continue;
             if (!w.isClosed()) continue;
-            String landuse = w.get("landuse");
-            if (landuse == null) continue;
+            String tagValue = w.get(tagKey);
+            if (tagValue == null) continue;
             List<List<Node>> rings = new ArrayList<>();
             rings.add(w.getNodes());
-            result.add(new BwLanduseArea(w, landuse, rings, Collections.emptyList()));
+            result.add(new BwLanduseArea(w, tagValue, rings, Collections.emptyList()));
         }
 
         for (Relation r : ds.getRelations()) {
             if (r.isDeleted() || r.isIncomplete()) continue;
             if (!"multipolygon".equals(r.get("type"))) continue;
-            String landuse = r.get("landuse");
-            if (landuse == null) continue;
+            String tagValue = r.get(tagKey);
+            if (tagValue == null) continue;
             List<Way> outerWays = new ArrayList<>();
             List<Way> innerWays = new ArrayList<>();
             for (RelationMember m : r.getMembers()) {
@@ -80,7 +91,7 @@ final class BwLanduseArea {
             List<List<Node>> outerRings = stitchWaysIntoRings(outerWays);
             List<List<Node>> innerRings = stitchWaysIntoRings(innerWays);
             if (!outerRings.isEmpty()) {
-                result.add(new BwLanduseArea(r, landuse, outerRings, innerRings));
+                result.add(new BwLanduseArea(r, tagValue, outerRings, innerRings));
             }
         }
         return result;
