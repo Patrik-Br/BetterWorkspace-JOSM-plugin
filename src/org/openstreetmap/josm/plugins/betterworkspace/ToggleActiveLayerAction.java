@@ -27,7 +27,9 @@ final class ToggleActiveLayerAction extends JosmAction {
     public void actionPerformed(ActionEvent e) {
         Layer layer = MainApplication.getLayerManager().getActiveLayer();
         if (layer != null) {
-            layer.setVisible(!layer.isVisible());
+            boolean visible = !layer.isVisible();
+            layer.setVisible(visible);
+            SecondaryMapViewAction.syncLayerVisibility(layer, visible);
         }
     }
 

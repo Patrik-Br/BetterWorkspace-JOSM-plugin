@@ -7,6 +7,7 @@ import java.awt.event.WindowEvent;
 
 import org.openstreetmap.josm.actions.JosmAction;
 import org.openstreetmap.josm.gui.MainApplication;
+import org.openstreetmap.josm.gui.layer.Layer;
 import org.openstreetmap.josm.tools.I18n;
 import org.openstreetmap.josm.tools.Shortcut;
 
@@ -53,6 +54,17 @@ final class SecondaryMapViewAction extends JosmAction {
     static void closeIfOpen() {
         if (frame != null) {
             frame.dispose();
+        }
+    }
+
+    /**
+     * Mirrors a layer's new visibility into the secondary window's own independent checklist, if
+     * one is open - lets {@link ToggleActiveLayerAction}'s shortcut affect both windows for that
+     * one layer. A no-op if the window isn't open.
+     */
+    static void syncLayerVisibility(Layer layer, boolean visible) {
+        if (frame != null) {
+            frame.setShown(layer, visible);
         }
     }
 }

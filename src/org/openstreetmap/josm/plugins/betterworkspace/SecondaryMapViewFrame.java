@@ -180,6 +180,27 @@ final class SecondaryMapViewFrame extends JFrame {
         rebuildChecklist();
     }
 
+    /**
+     * Mirrors a visibility change made elsewhere (e.g. {@code ToggleActiveLayerAction}'s
+     * shortcut) into this window's own independent checkbox/shown state for that one layer - a
+     * no-op if the layer isn't in this window's checklist. {@code JCheckBox.setSelected} doesn't
+     * fire its ActionListener, so {@code shown} and the repaint are updated here too, the same as
+     * that listener does for an actual click.
+     */
+    void setShown(Layer layer, boolean visible) {
+        JCheckBox cb = checkboxes.get(layer);
+        if (cb == null || cb.isSelected() == visible) {
+            return;
+        }
+        cb.setSelected(visible);
+        if (visible) {
+            shown.add(layer);
+        } else {
+            shown.remove(layer);
+        }
+        canvas.repaint();
+    }
+
     private void removeCheckbox(Layer layer) {
         checkboxes.remove(layer);
         shown.remove(layer);

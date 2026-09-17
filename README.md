@@ -112,6 +112,11 @@ A second, view-only map window with its own checkbox list of layers, opened/clos
 **Secondary Map View**. It stays in sync with the main view's position/zoom, but has its own independent set of which layers are shown — checking a
 box here never changes what's shown in the main Layers panel, and vice versa.
 
+One exception: **Toggle active layer visibility** (see above) also flips that same layer's
+checkbox here, if this window is open, so that one shortcut affects both windows at once. Any
+other way of changing a layer's visibility (the main Layers panel, or a checkbox here) still only
+affects the one window it was changed in.
+
 ## Multi-validation prep and the todo-plugin bridge
 
 **Multi-validation prep** looks at the layer directly below the currently active one in the Layers
