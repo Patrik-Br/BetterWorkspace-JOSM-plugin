@@ -15,6 +15,7 @@ import java.util.WeakHashMap;
 
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -23,6 +24,7 @@ import javax.swing.event.ListDataListener;
 
 import org.openstreetmap.josm.gui.MainApplication;
 import org.openstreetmap.josm.gui.MapFrame;
+import org.openstreetmap.josm.gui.Notification;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
 import org.openstreetmap.josm.spi.preferences.Config;
 import org.openstreetmap.josm.tools.I18n;
@@ -294,6 +296,7 @@ final class TodoBehaviorSync {
                         currentDone.addAll(restoreAsDone);
                         reinsertAtOriginalPositions(currentTodo, restoreAsDone, knownItemsOrdered);
                         advanceToNextAfter(restoreAsDone, knownItemsOrdered);
+                        notifyIfAllDone(currentTodo, currentDone);
                         // The stock title ("done/total") computes total as todoList.size() +
                         // doneList.size(), assuming those never overlap - true for the stock
                         // plugin (marking done removes from todoList) but no longer true here,
@@ -407,22 +410,41 @@ final class TodoBehaviorSync {
                 return;
             }
             int nextIndex = lastOriginalIndex + 1;
+            int lastMarkedIndex = lastOriginalIndex;
             SwingUtilities.invokeLater(() -> {
                 try {
                     List<Object> liveTodo = (List<Object>) todoListField.get(model);
-                    if (nextIndex < 0 || nextIndex >= liveTodo.size()) {
-                        return; // the marked item(s) were at the end of the list - nothing to advance to
+                    if (liveTodo.isEmpty()) {
+                        return;
                     }
-                    Object nextItem = liveTodo.get(nextIndex);
-                    selectionModel.setSelectionInterval(nextIndex, nextIndex);
+                    // Nothing sits after the just-marked item(s): the todo plugin's own
+                    // markItems() already reset its selection to index 0 in this case (its
+                    // fallback for "adjusted index ran past the end"), which would otherwise
+                    // silently leave the view jumped back to the first, already-done item.
+                    // Reselect the item just marked instead, so the view stays put.
+                    int fallbackIndex = nextIndex >= liveTodo.size() ? lastMarkedIndex : nextIndex;
+                    int targetIndex = Math.min(fallbackIndex, liveTodo.size() - 1);
+                    Object targetItem = liveTodo.get(targetIndex);
+                    selectionModel.setSelectionInterval(targetIndex, targetIndex);
                     if (list != null) {
-                        list.ensureIndexIsVisible(nextIndex);
+                        list.ensureIndexIsVisible(targetIndex);
                     }
-                    selectAndZoom.invoke(null, Collections.singletonList(nextItem));
+                    selectAndZoom.invoke(null, Collections.singletonList(targetItem));
                 } catch (ReflectiveOperationException | ClassCastException | IndexOutOfBoundsException ex) {
                     Logging.warn("BetterWorkspace: could not advance to the next todo item: " + ex);
                 }
             });
+        }
+
+        /** Fires a one-time "all done" notification exactly when this mark completes the list. */
+        private void notifyIfAllDone(List<Object> todo, Collection<Object> done) {
+            if (!todo.isEmpty() && done.size() >= todo.size()) {
+                SwingUtilities.invokeLater(() ->
+                        new Notification(I18n.tr("Todo list complete - every item is marked done."))
+                                .setIcon(JOptionPane.INFORMATION_MESSAGE)
+                                .setDuration(Notification.TIME_SHORT)
+                                .show());
+            }
         }
 
         /** Tries addItems(Collection&lt;TodoListItem&gt;) first, falls back to raw primitives on a type mismatch. */
