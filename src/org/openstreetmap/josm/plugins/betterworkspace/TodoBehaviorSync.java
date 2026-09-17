@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +22,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import org.openstreetmap.josm.gui.MainApplication;
 import org.openstreetmap.josm.gui.MapFrame;
@@ -149,9 +152,16 @@ final class TodoBehaviorSync {
                         + "for the todo list (its internals may have changed)", ex);
             }
 
-            addListDataListener.invoke(model, new RestoreListener(
-                    todoDialog, model, list, todoListField, doneListField, addItems,
-                    removeListDataListener, addListDataListener, getListeners, selectionModel, selectAndZoom));
+            RestoreListener listener = new RestoreListener(todoDialog, model, list, todoListField, doneListField,
+                    addItems, removeListDataListener, addListDataListener, getListeners, selectionModel, selectAndZoom);
+            addListDataListener.invoke(model, listener);
+            if (selectionModel != null) {
+                // Only used for the Todo_patrik-fork wraparound fix (see armWraparoundFix) - the
+                // standard plugin's own advanceToNextAfter doesn't need this, since it works by
+                // reacting to items being removed from the list, not by intercepting a selection
+                // update in flight.
+                selectionModel.addListSelectionListener(listener);
+            }
             Logging.info("BetterWorkspace: hooked the todo plugin's list ({0})", model.getClass().getName());
         } catch (ReflectiveOperationException | ClassCastException ex) {
             Logging.log(Logging.LEVEL_WARN, "BetterWorkspace: could not hook the todo plugin's list "
@@ -198,7 +208,7 @@ final class TodoBehaviorSync {
         }
     }
 
-    private static final class RestoreListener implements ListDataListener {
+    private static final class RestoreListener implements ListDataListener, ListSelectionListener {
         private final ToggleDialog todoDialog;
         private final Object model;
         private final JList<Object> list;
@@ -210,9 +220,14 @@ final class TodoBehaviorSync {
         private final Method getListeners;
         private final DefaultListSelectionModel selectionModel;
         private final Method selectAndZoom;
+        private final Object selectAndZoomTarget;
         /** Ordered snapshot (not just a Set) so a restored item can go back at its original index. */
         private List<Object> knownItemsOrdered;
+        /** Snapshot of doneList, to notice items marked done in place (see {@link #armWraparoundFix}). */
+        private Set<Object> knownDoneItems;
         private boolean restoring;
+        /** Index {@link #valueChanged} should overwrite the next time it fires, or -1 when none is armed. */
+        private int pendingSelectionFix = -1;
 
         RestoreListener(ToggleDialog todoDialog, Object model, JList<Object> list, Field todoListField,
                 Field doneListField, Method addItems, Method removeListDataListener, Method addListDataListener,
@@ -228,6 +243,8 @@ final class TodoBehaviorSync {
             this.getListeners = getListeners;
             this.selectionModel = selectionModel;
             this.selectAndZoom = selectAndZoom;
+            this.selectAndZoomTarget = selectAndZoom == null || Modifier.isStatic(selectAndZoom.getModifiers())
+                    ? null : todoDialog;
             snapshot();
         }
 
@@ -310,9 +327,25 @@ final class TodoBehaviorSync {
                     } finally {
                         restoring = false;
                     }
+                } else {
+                    // Nothing vanished: either nothing was marked done, or this is a fork (e.g.
+                    // this user's own Todo_patrik) whose markItems() keeps a done item in place
+                    // instead of removing it. Detect that second case directly, by diffing
+                    // doneList against last time - freshlyDone items still present in the list.
+                    List<Object> freshlyDone = new ArrayList<>();
+                    for (Object item : currentDone) {
+                        if (currentSet.contains(item) && !knownDoneItems.contains(item)) {
+                            freshlyDone.add(item);
+                        }
+                    }
+                    if (!freshlyDone.isEmpty()) {
+                        armWraparoundFix(freshlyDone, currentTodo);
+                        notifyIfAllDone(currentTodo, currentDone);
+                    }
                 }
 
                 knownItemsOrdered = new ArrayList<>((List<Object>) todoListField.get(model));
+                knownDoneItems = new HashSet<>((Collection<Object>) doneListField.get(model));
             } catch (ReflectiveOperationException | ClassCastException ex) {
                 Logging.warn("BetterWorkspace: todo list sync failed: " + ex);
             }
@@ -429,11 +462,77 @@ final class TodoBehaviorSync {
                     if (list != null) {
                         list.ensureIndexIsVisible(targetIndex);
                     }
-                    selectAndZoom.invoke(null, Collections.singletonList(targetItem));
+                    selectAndZoom.invoke(selectAndZoomTarget, Collections.singletonList(targetItem));
                 } catch (ReflectiveOperationException | ClassCastException | IndexOutOfBoundsException ex) {
                     Logging.warn("BetterWorkspace: could not advance to the next todo item: " + ex);
                 }
             });
+        }
+
+        /**
+         * Counterpart to {@link #advanceToNextAfter} for forks (e.g. this user's own Todo_patrik)
+         * whose markItems() keeps a done item in the list instead of removing it. Their own
+         * "select next" logic (elsewhere in their model, run right after this returns) still
+         * works correctly on its own EXCEPT when the just-marked item was the last one - there it
+         * wraps back to index 0 instead of stopping, the same bug as the standard plugin, just
+         * reached through different code. Only that one case is armed here; every other mark is
+         * left alone since the fork's own advance is already correct.
+         *
+         * <p>Unlike the standard plugin's selection reset (which frequently recomputes to the same
+         * numeric index it already had, so Swing treats it as a no-op and fires nothing), this
+         * fork's wraparound is a genuine index change every time it happens (something else to
+         * 0), so {@link #valueChanged} reliably catches it synchronously, before the caller of
+         * markItems() reads the selection back out to zoom - no flicker. The invokeLater below is
+         * still a safety net for if some future version doesn't fire that the same way.
+         */
+        private void armWraparoundFix(List<Object> justMarkedDone, List<Object> liveTodo) {
+            if (selectionModel == null || selectAndZoom == null || liveTodo.isEmpty()) {
+                return;
+            }
+            int lastMarkedIndex = -1;
+            for (Object item : justMarkedDone) {
+                lastMarkedIndex = Math.max(lastMarkedIndex, liveTodo.indexOf(item));
+            }
+            if (lastMarkedIndex < 0 || lastMarkedIndex != liveTodo.size() - 1) {
+                return; // not the last item - the fork's own advance-to-next already gets this right
+            }
+            pendingSelectionFix = lastMarkedIndex;
+            int targetIndex = lastMarkedIndex;
+            SwingUtilities.invokeLater(() -> applyPendingSelectionFixIfStillArmed(targetIndex));
+        }
+
+        @Override
+        public void valueChanged(ListSelectionEvent e) {
+            if (pendingSelectionFix < 0) {
+                return;
+            }
+            int fix = pendingSelectionFix;
+            // Clear before re-entering: setSelectionInterval below fires this same listener again.
+            pendingSelectionFix = -1;
+            selectionModel.setSelectionInterval(fix, fix);
+        }
+
+        /** Only runs if {@link #valueChanged} never consumed the fix - see {@link #armWraparoundFix}. */
+        @SuppressWarnings("unchecked")
+        private void applyPendingSelectionFixIfStillArmed(int targetIndex) {
+            if (pendingSelectionFix != targetIndex) {
+                return;
+            }
+            pendingSelectionFix = -1;
+            try {
+                List<Object> liveTodo = (List<Object>) todoListField.get(model);
+                if (targetIndex < 0 || targetIndex >= liveTodo.size()) {
+                    return;
+                }
+                Object targetItem = liveTodo.get(targetIndex);
+                selectionModel.setSelectionInterval(targetIndex, targetIndex);
+                if (list != null) {
+                    list.ensureIndexIsVisible(targetIndex);
+                }
+                selectAndZoom.invoke(selectAndZoomTarget, Collections.singletonList(targetItem));
+            } catch (ReflectiveOperationException | ClassCastException | IndexOutOfBoundsException ex) {
+                Logging.warn("BetterWorkspace: could not fix the todo list's wraparound selection: " + ex);
+            }
         }
 
         /** Fires a one-time "all done" notification exactly when this mark completes the list. */
@@ -465,8 +564,10 @@ final class TodoBehaviorSync {
         private void snapshot() {
             try {
                 knownItemsOrdered = new ArrayList<>((List<Object>) todoListField.get(model));
+                knownDoneItems = new HashSet<>((Collection<Object>) doneListField.get(model));
             } catch (IllegalAccessException | ClassCastException ex) {
                 knownItemsOrdered = new ArrayList<>();
+                knownDoneItems = new HashSet<>();
             }
         }
 
