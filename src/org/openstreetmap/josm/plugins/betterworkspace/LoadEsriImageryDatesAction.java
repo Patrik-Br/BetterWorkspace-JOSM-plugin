@@ -69,10 +69,11 @@ final class LoadEsriImageryDatesAction extends JosmAction {
     private static final String MAPCSS_STYLE =
             "meta {\n"
             + "  title: \"BetterWorkspace: Esri Imagery Dates\";\n"
-            // Same bare, plugin-relative name as this action's own toolbar/menu icon - JOSM
-            // resolves it the same way, since it's still searching this plugin's own image
-            // directory (registered while the plugin is loaded) when it renders the style list.
-            + "  icon: \"betterworkspace/betterworkspace\";\n"
+            // A bare, plugin-relative name (like this action's own toolbar/menu icon uses) does
+            // NOT resolve here - MapPaintStyles' icon lookup doesn't fall back to a plugin's own
+            // image directory the way normal UI icons do, so it comes up "not found". A direct
+            // URL to the same source image (this plugin's own GitHub repo) works instead.
+            + "  icon: \"https://raw.githubusercontent.com/Patrik-Br/BetterWorkspace-JOSM-plugin/refs/heads/main/images/betterworkspace/betterworkspace.svg\";\n"
             + "}\n"
             + "\n"
             + "setting::textcolor {\n"
@@ -99,7 +100,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
             + "}\n";
     private static final String MAPCSS_STYLE_NAME = "BetterWorkspace: Esri Imagery Dates";
     /** Bump whenever {@link #MAPCSS_STYLE} changes, so already-registered installs pick up the update. */
-    private static final int MAPCSS_STYLE_VERSION = 5;
+    private static final int MAPCSS_STYLE_VERSION = 6;
     private static final String MAPCSS_STYLE_VERSION_PREF = "betterworkspace.esri.mapcss.styleversion";
 
     LoadEsriImageryDatesAction() {
