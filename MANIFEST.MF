@@ -6,4 +6,4 @@ Plugin-Link: https://github.com/Patrik-Br/BetterWorkspace-JOSM-plugin
 Plugin-Mainversion: 19555
 Plugin-Canloadatruntime: true
 Author: Patrik_B
-Plugin-Version: 1.2.0
+Plugin-Version: 1.2.1
