@@ -95,6 +95,11 @@ the whole run, making the rest of your computer unusable in the meantime (this i
 josm-batch-downloader does, and why). `NullProgressMonitor` has no UI at all, so only this action's
 own status dialog is shown, and you can keep working in other windows while it downloads.
 
+Its progress dialog has a **Cancel** button (also triggered by the window's close button or Esc) -
+aborts whichever download is currently in flight, disposes the dialog, and tells you how many
+features got downloaded before you stopped it. Whatever was downloaded up to that point stays in
+the new layer.
+
 ## Quick TMS
 
 **Quick TMS...** previews a TMS layer without going through JOSM's own **Preferences → Imagery → +TMS**, which

@@ -118,12 +118,21 @@ final class BatchDownloadAction extends JosmAction {
         MainApplication.getLayerManager().addLayer(layer);
         MainApplication.getLayerManager().setActiveLayer(layer);
 
-        JDialog prog = ProgressDialog.build("Downloading feature 1 of " + features.size() + "...");
+        BatchState state = new BatchState();
+        JDialog prog = ProgressDialog.build("Downloading feature 1 of " + features.size() + "...", state::cancel);
         prog.setVisible(true);
-        downloadNext(prog, features, 0);
+        downloadNext(prog, features, 0, state);
     }
 
-    private void downloadNext(JDialog prog, List<OsmPrimitive> features, int index) {
+    private void downloadNext(JDialog prog, List<OsmPrimitive> features, int index, BatchState state) {
+        if (state.cancelled) {
+            prog.dispose();
+            JOptionPane.showMessageDialog(null,
+                    "Download cancelled after " + index + " of " + features.size() + " feature(s).\n\n"
+                    + "The data downloaded so far is kept in the new layer.",
+                    "BetterWorkspace", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         if (index >= features.size()) {
             prog.dispose();
             return;
@@ -131,14 +140,31 @@ final class BatchDownloadAction extends JosmAction {
         ProgressDialog.setMessage(prog, "Downloading feature " + (index + 1) + " of " + features.size() + "...");
         Bounds bounds = boundsOf(features.get(index).getBBox());
         DownloadOsmTask task = new DownloadOsmTask();
+        state.currentDownload = task;
         Future<?> future = task.download(new DownloadParams(), bounds, NullProgressMonitor.INSTANCE);
         MainApplication.worker.submit(() -> {
             try { future.get(); } catch (Exception ignored) {}
-            SwingUtilities.invokeLater(() -> downloadNext(prog, features, index + 1));
+            SwingUtilities.invokeLater(() -> {
+                state.currentDownload = null;
+                downloadNext(prog, features, index + 1, state);
+            });
         });
     }
 
     private static Bounds boundsOf(BBox bbox) {
         return new Bounds(bbox.getMinLat(), bbox.getMinLon(), bbox.getMaxLat(), bbox.getMaxLon());
+    }
+
+    /** Shared state of one batch run, so the progress dialog's Cancel button can stop whichever download is in flight. */
+    private static final class BatchState {
+        volatile boolean cancelled;
+        DownloadOsmTask currentDownload;
+
+        void cancel() {
+            if (cancelled) return;
+            cancelled = true;
+            DownloadOsmTask download = currentDownload;
+            if (download != null) download.cancel();
+        }
     }
 }
