@@ -12,6 +12,9 @@ it to your toolbar via JOSM's own Preferences → Shortcuts / toolbar customizat
 - Load Esri Imagery Date Grid — loads Esri World Imagery's real per-tile acquisition dates for the current view as a data layer 
   - First time you run this feature it will create "BetterWorkspace: Esri Imagery Dates" map paint style. You can right click it in the  Map Paint Styles window and change the colors in Style settings
 - Secondary view-only map window that tracks the main view, with its own independent set of active layers.
+- Batch download v2 — downloads OSM data into a new layer around every selected feature (or every
+  feature in the active layer if none are selected), one at a time in the background with no popups
+  stealing focus — see [Batch download v2](#batch-download-v2) below.
 - Arrange the docked side panels, remembered across restarts.
 
 Separately, it also adds a **"Select objects"** entry to the right-click menu of JOSM's built-in
@@ -36,6 +39,7 @@ BetterWorkspace
 ├── Load Esri Imagery Date Grid...
 ├── Secondary Map View
 ├── ───────────────
+├── Batch download v2
 └── Arrange side panels...
 ```
 
@@ -73,6 +77,23 @@ ever sent to the HOT Tasking Manager API itself, over HTTPS.
 - The token expires roughly 7 days after your last TM login — re-copy it periodically.
 - **Load HOT TM Task Grid...** works for public projects too (no token needed), so it's a drop-in
   replacement for the Ctrl+L workflow either way, and remembers the last project ID you entered.
+
+## Batch download v2
+
+**Batch download v2** downloads OSM data into a new layer around every selected feature in the active
+layer, or every feature in it if none are selected. No dialog - it starts immediately, with no buffer and always
+into a fresh "Batch downloaded" layer. A standalone node that's already part of another
+selected way/relation is skipped, since downloading around it individually would just be redundant.
+With more than 100 features you'll get a heads-up that it may take a while before it starts.
+
+Same idea as the separate [josm-batch-downloader](https://gitlab.com/Jamalek/josm-batch-downloader)
+plugin, with one difference: **it runs quietly in the background.** Each per-feature
+download uses JOSM's `NullProgressMonitor` instead of leaving the monitor unset. An unset monitor
+makes JOSM fall back to its own `PleaseWaitProgressMonitor` popup for *every single download* — with
+one download per feature, that means the JOSM window keeps grabbing focus and coming to the front for
+the whole run, making the rest of your computer unusable in the meantime (this is what
+josm-batch-downloader does, and why). `NullProgressMonitor` has no UI at all, so only this action's
+own status dialog is shown, and you can keep working in other windows while it downloads.
 
 ## Quick TMS
 

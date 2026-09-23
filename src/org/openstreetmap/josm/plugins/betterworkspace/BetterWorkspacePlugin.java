@@ -63,6 +63,7 @@ public class BetterWorkspacePlugin extends Plugin {
         safely("Load Esri imagery dates menu item", () -> bwMenu.add(new LoadEsriImageryDatesAction()));
         safely("Secondary map view menu item", () -> bwMenu.add(new SecondaryMapViewAction()));
         bwMenu.addSeparator();
+        safely("Batch download menu item", () -> bwMenu.add(new BatchDownloadAction()));
 
         JMenuItem arrangePanelsMenuItem = null;
         try {
