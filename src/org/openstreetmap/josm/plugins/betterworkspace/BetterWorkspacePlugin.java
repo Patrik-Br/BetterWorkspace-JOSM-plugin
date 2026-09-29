@@ -50,6 +50,11 @@ public class BetterWorkspacePlugin extends Plugin {
         // Primes the preference so it shows up in Preferences -> Advanced Preferences right
         // away, rather than only appearing the first time TodoBehaviorSync actually reads it.
         safely("todo-keep-done preference priming", () -> Config.getPref().getBoolean(TodoBehaviorSync.PREF_KEEP_DONE, true));
+        safely("tm-imagery-offset preference priming",
+                () -> Config.getPref().getBoolean(TmImageryOffsetSync.PREF_ENABLED, true));
+        // MainApplication.getLayerManager() is available immediately (unlike the mapFrameInitialized
+        // hooks below, which need a MapFrame) - no need to wait/retry.
+        safely("tm imagery offset sync", TmImageryOffsetSync::install);
 
         JMenu bwMenu = new JMenu(I18n.tr("BetterWorkspace"));
         bwMenu.setIcon(new ImageProvider("betterworkspace/betterworkspace").get());

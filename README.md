@@ -23,7 +23,9 @@ entry to the right-click menu of the **Tags/Memberships** panel, next to JOSM's 
 Key/Value" — same key/value expression, but added as a new row in the Filters panel instead of
 running a search. If you also have the standard **todo** plugin (or a compatible fork) installed,
 marking an item done there keeps it visible in the list instead of removing it — see [Keeping
-completed todo items visible](#keeping-completed-todo-items-visible) below.
+completed todo items visible](#keeping-completed-todo-items-visible) below. It also automatically
+applies a HOT Tasking Manager project's imagery offset when you lock a task and open it in JOSM —
+see [HOT Tasking Manager imagery offset](#hot-tasking-manager-imagery-offset) below.
 
 ## Menu structure
 
@@ -77,6 +79,34 @@ ever sent to the HOT Tasking Manager API itself, over HTTPS.
 - The token expires roughly 7 days after your last TM login — re-copy it periodically.
 - **Load HOT TM Task Grid...** works for public projects too (no token needed), so it's a drop-in
   replacement for the Ctrl+L workflow either way, and remembers the last project ID you entered.
+
+## HOT Tasking Manager imagery offset
+
+When a project manager sets an imagery offset for a TM project, only iD applies it automatically
+today - JOSM users locking a task and opening it in JOSM don't get it (a stopgap until JOSM core's
+`/imagery` remote-control command supports an offset param; see
+[hotosm/tasking-manager#6873](https://github.com/hotosm/tasking-manager/issues/6873)). This plugin
+closes that gap: when TM's "open in JOSM" sequence brings in the task's data and imagery, it applies
+the project's configured offset via JOSM's own imagery-offset mechanism - the same thing as picking
+a bookmark from an imagery layer's right-click **Offset** menu, just automatic. A short notification
+confirms when it's applied. Projects with no offset configured are unaffected.
+
+There are two ways to set the offset, checked in this order:
+
+1. **Appended to the imagery URL itself**, in TM's **Imagery** tab - add `#offset=east,north` (in
+   meters) to the very end of your custom TMS/WMS URL, e.g.
+   `https://example.com/{z}/{x}/{y}.png#offset=-12.34,9.87`. This is inert for actual tile loading - a URL
+   fragment is never sent to the tile server, only ever read client-side - so it doesn't affect the
+   imagery itself. **Use this for custom imagery projects**.
+2. **TM's own "Additional iD URL parameters" field**, in the project's **Metadata** tab - e.g.
+   `disabled_features=buildings&offset=-10,5`. This is the field TM already uses for iD; the plugin
+   reads it via the TM API, which for a **private** project needs your personal HOT TM API token
+   (see below) - and since that token expires roughly every 7 days, this option is friction for
+   private projects specifically. Fine for public projects, or if you can't change the
+   imagery URL, when using free public imagery like Bing or Esri.
+
+Turn the whole feature off via the `betterworkspace.tmimageryoffset.enabled` preference (on by
+default) in JOSM's own **Preferences → Advanced Preferences**.
 
 ## Batch download v2
 
@@ -190,6 +220,7 @@ implementation, and debugging.
 | `BetterWorkspacePlugin.java` | Entry point, builds the "More tools → BetterWorkspace" menu |
 | `ArrangePanelsDialog.java` / `PanelReorderer.java` | Reorder the docked side panels; order remembered across restarts |
 | `LoadTmTaskGridAction.java` | Loads a HOT TM project's task grid, including private/draft projects |
+| `TmImageryOffsetSync.java` | Auto-applies a HOT TM project's imagery offset when its task is opened in JOSM |
 | `SetTmApiTokenAction.java` / `TmApiToken.java` | Save/use your personal HOT TM API token |
 | `ToggleActiveLayerAction.java` | Toggle the visibility of the currently active layer |
 | `MultiValidationPrepAction.java` / `TodoBridge.java` | Select the layer-below's ways and hand them to the todo plugin |
