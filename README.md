@@ -164,6 +164,21 @@ real acquisition date (`date`, e.g. `2025-09-06`) plus resolution, accuracy and 
 - Text and outline color are both user-adjustable from Map Paint Styles window → right click → Style settings
   (defaults: white `#FFFFFF` text, orange `#FF9933` outline)
 
+**A date only applies at the zoom level its footprint covers.** World Imagery isn't one uniform
+image - it's a resolution-stratified mosaic, so the same spot commonly has several *overlapping*
+footprints with different dates, each only the actual visible imagery within its own zoom range
+(e.g. a high-resolution capture that replaces an older, undated low-res basemap only once you're
+zoomed in past a certain level - confirmed directly against Esri's service, which exposes this as
+`MinMapLevel`/`MaxMapLevel`). This plugin tags that range as `esri_zoom_min`/`esri_zoom_max`
+instead (replacing Esri's raw fields rather than duplicating them, so there's one place to look,
+not two names for the same thing).
+
+By default the on-map label is still just the plain date, e.g. `2025-12-20`, to keep the map
+uncluttered. Turn on **Display zoom levels** (Map Paint Styles window → right click this style →
+Style settings) to show the zoom range alongside it instead, e.g. `2025-12-20 (z=12-19)` - handy
+when you suspect the imagery differs by zoom and want to check without opening the tags panel for
+every footprint.
+
 ## Secondary Map View
 
 A second, view-only map window with its own checkbox list of layers, opened/closed via

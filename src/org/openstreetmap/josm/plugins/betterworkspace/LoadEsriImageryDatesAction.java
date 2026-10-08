@@ -41,10 +41,11 @@ import org.openstreetmap.josm.tools.Shortcut;
  * Loads Esri World Imagery's "Citations" footprint layer for the current map
  * view as a data layer, so each footprint's real acquisition date can be read
  * from its tags (as {@code SRC_DATE}/{@code date}, plus resolution/accuracy/
- * source). JOSM's own "Show tile info" reports today's date for this imagery,
- * not the actual capture date - this queries the same underlying metadata
- * service that https://martinedoesgis.github.io/esri-imagery-date-finder/
- * uses, instead.
+ * source, and the zoom range it's actually shown at - see
+ * {@link #addFriendlyDateTags}). JOSM's own "Show tile info" reports today's
+ * date for this imagery, not the actual capture date - this queries the same
+ * underlying metadata service that
+ * https://martinedoesgis.github.io/esri-imagery-date-finder/ uses, instead.
  *
  * <p>The query is capped to the current view and refused outright above
  * {@link #MAX_DIAGONAL_METERS} across: Esri's own server already caps each
@@ -57,7 +58,8 @@ final class LoadEsriImageryDatesAction extends JosmAction {
 
     private static final String QUERY_URL =
             "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/4/query";
-    private static final String OUT_FIELDS = "SRC_DATE,SRC_RES,SRC_ACC,SRC_DESC,NICE_NAME,NICE_DESC";
+    private static final String OUT_FIELDS =
+            "SRC_DATE,SRC_RES,SRC_ACC,SRC_DESC,NICE_NAME,NICE_DESC,MinMapLevel,MaxMapLevel";
     private static final double MAX_DIAGONAL_METERS = 50_000;
 
     /**
@@ -88,8 +90,14 @@ final class LoadEsriImageryDatesAction extends JosmAction {
             + "  default: #FF9933;\n"
             + "}\n"
             + "\n"
+            + "setting::showzoom {\n"
+            + "  type: boolean;\n"
+            + "  label: tr(\"Display zoom levels\");\n"
+            + "  default: false;\n"
+            + "}\n"
+            + "\n"
             + "way[SRC_RES], relation[SRC_RES] {\n"
-            + "  text: date;\n"
+            + "  text: eval(cond(setting(\"showzoom\"), tag(\"esri_date_label\"), tag(\"date\")));\n"
             + "  font-size: 18;\n"
             + "  text-position: center;\n"
             + "  text-color: setting(\"textcolor\");\n"
@@ -100,7 +108,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
             + "}\n";
     private static final String MAPCSS_STYLE_NAME = "BetterWorkspace: Esri Imagery Dates";
     /** Bump whenever {@link #MAPCSS_STYLE} changes, so already-registered installs pick up the update. */
-    private static final int MAPCSS_STYLE_VERSION = 6;
+    private static final int MAPCSS_STYLE_VERSION = 8;
     private static final String MAPCSS_STYLE_VERSION_PREF = "betterworkspace.esri.mapcss.styleversion";
 
     LoadEsriImageryDatesAction() {
@@ -185,12 +193,41 @@ final class LoadEsriImageryDatesAction extends JosmAction {
         setEnabled(MainApplication.getMap() != null);
     }
 
-    /** Adds a human-readable {@code date=YYYY-MM-DD} tag alongside Esri's raw {@code SRC_DATE} (YYYYMMDD). */
+    /**
+     * Adds human-readable tags alongside Esri's raw fields: {@code date=YYYY-MM-DD} from
+     * {@code SRC_DATE} (YYYYMMDD), {@code esri_zoom_min}/{@code esri_zoom_max} from
+     * {@code MinMapLevel}/{@code MaxMapLevel} (replacing those two raw fields rather than sitting
+     * alongside them, so there's exactly one place to look for the zoom range, not two names for
+     * the same thing), and a combined {@code esri_date_label} used for the on-map text when the
+     * "Display zoom levels" style setting is on (off by default - see {@link #MAPCSS_STYLE}; plain
+     * {@code date} is shown otherwise).
+     *
+     * <p>The zoom range matters because World Imagery is a resolution-stratified mosaic, not one
+     * uniform image: the same spot commonly has several overlapping footprints with different
+     * dates, each one only the actual visible imagery within its own zoom range (confirmed against
+     * Esri's live service - e.g. a 0.3m-resolution capture only replacing the undated global
+     * basemap from zoom 12 up). A date with no zoom range attached is easy to misread as applying
+     * at any zoom, when it may only be correct once you're zoomed in that far.
+     */
     private static void addFriendlyDateTags(DataSet dataSet) {
         for (var primitive : dataSet.getPrimitives(p -> true)) {
             String rawDate = primitive.get("SRC_DATE");
+            String date = null;
             if (rawDate != null && rawDate.matches("\\d{8}")) {
-                primitive.put("date", rawDate.substring(0, 4) + "-" + rawDate.substring(4, 6) + "-" + rawDate.substring(6, 8));
+                date = rawDate.substring(0, 4) + "-" + rawDate.substring(4, 6) + "-" + rawDate.substring(6, 8);
+                primitive.put("date", date);
+            }
+            String minZoom = primitive.get("MinMapLevel");
+            String maxZoom = primitive.get("MaxMapLevel");
+            primitive.remove("MinMapLevel");
+            primitive.remove("MaxMapLevel");
+            String zoomRange = minZoom != null && maxZoom != null ? minZoom + "-" + maxZoom : null;
+            if (zoomRange != null) {
+                primitive.put("esri_zoom_min", minZoom);
+                primitive.put("esri_zoom_max", maxZoom);
+            }
+            if (date != null) {
+                primitive.put("esri_date_label", zoomRange != null ? date + " (z=" + zoomRange + ")" : date);
             }
         }
     }
