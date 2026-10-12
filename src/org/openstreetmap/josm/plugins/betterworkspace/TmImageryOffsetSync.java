@@ -4,7 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +18,9 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.openstreetmap.josm.actions.UploadAction;
+import org.openstreetmap.josm.actions.upload.UploadHook;
+import org.openstreetmap.josm.data.APIDataSet;
 import org.openstreetmap.josm.data.Bounds;
 import org.openstreetmap.josm.data.coor.EastNorth;
 import org.openstreetmap.josm.data.coor.LatLon;
@@ -28,6 +37,7 @@ import org.openstreetmap.josm.gui.layer.LayerManager;
 import org.openstreetmap.josm.gui.layer.OsmDataLayer;
 import org.openstreetmap.josm.spi.preferences.Config;
 import org.openstreetmap.josm.tools.I18n;
+import org.openstreetmap.josm.tools.LanguageInfo;
 import org.openstreetmap.josm.tools.Logging;
 
 import jakarta.json.Json;
@@ -58,6 +68,8 @@ final class TmImageryOffsetSync {
     private static final Pattern PROJECT_HASHTAG = Pattern.compile("#hotosm-project-(\\d+)", Pattern.CASE_INSENSITIVE);
     /** Matches an "offset=east,north" appended as a URL fragment - see {@link #applyEmbeddedUrlOffsetIfPresent}. */
     private static final Pattern URL_OFFSET = Pattern.compile("offset=(-?[\\d.]+),(-?[\\d.]+)", Pattern.CASE_INSENSITIVE);
+    /** Matches a "name=..." URL fragment parameter - see {@link #applyEmbeddedUrlNameIfPresent}. */
+    private static final Pattern URL_NAME = Pattern.compile("[#&]name=([^#&]*)", Pattern.CASE_INSENSITIVE);
 
     static final String PREF_ENABLED = "betterworkspace.tmimageryoffset.enabled";
 
@@ -68,6 +80,7 @@ final class TmImageryOffsetSync {
     }
 
     static void install() {
+        UploadAction.registerUploadHook(new SourceNameUploadHook());
         MainApplication.getLayerManager().addLayerChangeListener(new LayerManager.LayerChangeListener() {
             @Override
             public void layerAdded(LayerManager.LayerAddEvent e) {
@@ -239,6 +252,7 @@ final class TmImageryOffsetSync {
     }
 
     private static void onImageryLayerAdded(AbstractTileSourceLayer<?> layer) {
+        applyEmbeddedUrlNameIfPresent(layer); // first, so the offset bookmark below records the final name
         if (applyEmbeddedUrlOffsetIfPresent(layer)) {
             return; // handled straight from the URL - no TM API call, so no token needed either
         }
@@ -285,6 +299,120 @@ final class TmImageryOffsetSync {
             return true;
         } catch (NumberFormatException ex) {
             return false;
+        }
+    }
+
+    /**
+     * TM passes a custom imagery URL to JOSM as both the URL and the layer title, so the raw URL
+     * ends up as the changeset {@code source} tag on upload. A {@code name=...} fragment parameter
+     * (e.g. {@code ...png#offset=-0.53,-2.01&name=Hello World}, or a second {@code #name=...})
+     * replaces that with a readable name. The upload dialog takes the source from
+     * {@link ImageryInfo#getSourceName()}, which returns the info's original name; the only public
+     * setter for it is {@code setName(lang, name)}, which always overwrites it when {@code lang}
+     * is JOSM's current locale code.
+     *
+     * <p>TM also sends the same URL as {@code changeset_source} on its {@code /load_and_zoom}
+     * call, which JOSM stores as the data layer's own changeset {@code source} tag - and the
+     * upload dialog joins every visible layer's source, so the URL would still show up next to the
+     * name. {@link #replaceRenamedImageryUrlsInSourceTags} swaps it out.
+     */
+    private static void applyEmbeddedUrlNameIfPresent(AbstractTileSourceLayer<?> layer) {
+        ImageryInfo info = layer.getInfo();
+        String name = embeddedUrlName(info.getUrl());
+        if (name == null) {
+            return;
+        }
+        info.setName(LanguageInfo.getJOSMLocaleCode(), name);
+        layer.setName(name); // the Layers panel title is the layer's own copy, set at creation
+        Logging.info("BetterWorkspace: imagery source name set to \"{0}\" from URL fragment", name);
+        replaceRenamedImageryUrlsInSourceTags(); // in case the TM data layer arrived first
+    }
+
+    /** The decoded {@code name=...} from the URL's fragment, or null if there is none. */
+    private static String embeddedUrlName(String url) {
+        int hash = url == null ? -1 : url.indexOf('#');
+        if (hash < 0) {
+            return null;
+        }
+        Matcher m = URL_NAME.matcher(url.substring(hash));
+        if (!m.find()) {
+            return null;
+        }
+        String name;
+        try {
+            name = URLDecoder.decode(m.group(1), StandardCharsets.UTF_8).trim();
+        } catch (IllegalArgumentException ex) { // malformed %-escape - use it as typed
+            name = m.group(1).trim();
+        }
+        return name.isEmpty() ? null : name;
+    }
+
+    /** URL to name, for every open imagery layer whose URL carries a {@code name=...} fragment. */
+    private static Map<String, String> renamedImageryUrls() {
+        Map<String, String> renamed = new HashMap<>();
+        for (Layer l : MainApplication.getLayerManager().getLayers()) {
+            if (l instanceof AbstractTileSourceLayer<?> tsl) {
+                String url = tsl.getInfo().getUrl();
+                String name = embeddedUrlName(url);
+                if (name != null) {
+                    renamed.put(url.trim(), name);
+                }
+            }
+        }
+        return renamed;
+    }
+
+    /**
+     * Rewrites each data layer's changeset {@code source} tag (set from TM's
+     * {@code changeset_source}), replacing a renamed imagery URL with its name. Run when such an
+     * imagery layer is added and again by an upload hook just before the upload dialog opens, so
+     * either arrival order of the data and imagery layers ends up clean.
+     */
+    static void replaceRenamedImageryUrlsInSourceTags() {
+        Map<String, String> renamed = renamedImageryUrls();
+        if (renamed.isEmpty()) {
+            return;
+        }
+        for (OsmDataLayer layer : MainApplication.getLayerManager().getLayersOfType(OsmDataLayer.class)) {
+            DataSet ds = layer.getDataSet();
+            String source = ds == null ? null : ds.getChangeSetTags().get("source");
+            String rewritten = replaceRenamedUrls(source, renamed);
+            if (rewritten != null && !rewritten.equals(source)) {
+                ds.addChangeSetTag("source", rewritten);
+            }
+        }
+    }
+
+    /** Replaces each {@code ;}-separated part of a source value that is a renamed imagery URL, dropping duplicates. */
+    private static String replaceRenamedUrls(String source, Map<String, String> renamed) {
+        if (source == null || renamed.isEmpty()) {
+            return source;
+        }
+        Set<String> parts = new LinkedHashSet<>();
+        for (String part : source.split(";")) {
+            String p = part.trim();
+            if (!p.isEmpty()) {
+                parts.add(renamed.getOrDefault(p, p));
+            }
+        }
+        return String.join("; ", parts);
+    }
+
+    /** Clears the URL out of the upload dialog's already-computed source text, too. */
+    private static final class SourceNameUploadHook implements UploadHook {
+        @Override
+        public boolean checkUpload(APIDataSet apiDataSet) {
+            replaceRenamedImageryUrlsInSourceTags();
+            return true;
+        }
+
+        @Override
+        public void modifyChangesetTags(Map<String, String> tags) {
+            String source = tags.get("source");
+            String rewritten = replaceRenamedUrls(source, renamedImageryUrls());
+            if (rewritten != null && !rewritten.equals(source)) {
+                tags.put("source", rewritten);
+            }
         }
     }
 

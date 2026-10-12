@@ -108,6 +108,15 @@ There are two ways to set the offset, checked in this order:
 Turn the whole feature off via the `betterworkspace.tmimageryoffset.enabled` preference (on by
 default) in JOSM's own **Preferences → Advanced Preferences**.
 
+### Changeset source name for custom imagery
+
+TM hands a custom imagery URL to JOSM as the layer's title too, so by default the raw URL ends up as
+the changeset `source` tag on upload. Add `name=...` to the URL fragment to use a readable name
+instead, e.g. `https://example.com/{z}/{x}/{y}.png#offset=-12.34,9.87&name=Drone imagery 2026` - or
+without an offset, `https://example.com/{z}/{x}/{y}.png#name=Drone imagery 2026`. A second `#`
+(`...#offset=-12.34,9.87#name=Drone imagery 2026`) works too. The name is used both as the layer's
+title in the Layers panel and as the upload `source` tag. This works independently of the offset preference above.
+
 ## Batch download v2
 
 **Batch download v2** downloads OSM data into a new layer around every selected feature in the active
