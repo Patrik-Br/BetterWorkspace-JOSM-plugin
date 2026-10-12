@@ -70,6 +70,8 @@ final class TmImageryOffsetSync {
     private static final Pattern URL_OFFSET = Pattern.compile("offset=(-?[\\d.]+),(-?[\\d.]+)", Pattern.CASE_INSENSITIVE);
     /** Matches a "name=..." URL fragment parameter - see {@link #applyEmbeddedUrlNameIfPresent}. */
     private static final Pattern URL_NAME = Pattern.compile("[#&]name=([^#&]*)", Pattern.CASE_INSENSITIVE);
+    /** An imagery-type/zoom prefix like {@code tms[22]:}, {@code tms[1,22]:} or {@code wms:} in front of a URL. */
+    private static final Pattern IMAGERY_TYPE_PREFIX = Pattern.compile("^[a-z_]+(?:\\[[\\d,\\s]*\\])?:(?=[a-z][a-z0-9+.-]*://)", Pattern.CASE_INSENSITIVE);
 
     static final String PREF_ENABLED = "betterworkspace.tmimageryoffset.enabled";
 
@@ -392,7 +394,9 @@ final class TmImageryOffsetSync {
         for (String part : source.split(";")) {
             String p = part.trim();
             if (!p.isEmpty()) {
-                parts.add(renamed.getOrDefault(p, p));
+                // TM sends the imagery string as entered, e.g. "tms[22]:https://...", but JOSM strips that prefix from the layer's URL
+                String bareUrl = IMAGERY_TYPE_PREFIX.matcher(p).replaceFirst("");
+                parts.add(renamed.getOrDefault(bareUrl, p));
             }
         }
         return String.join("; ", parts);
