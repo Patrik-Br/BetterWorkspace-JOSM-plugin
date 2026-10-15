@@ -48,7 +48,7 @@ final class BatchDownloadAction extends JosmAction {
     BatchDownloadAction() {
         super(I18n.tr("Batch download v2"), "betterworkspace/batch-download",
                 I18n.tr("Downloads OSM data into a new layer around every selected feature, or every feature "
-                        + "in the active layer if none are selected"),
+                        + "in the active layer if none are selected (BetterWorkspace)"),
                 Shortcut.registerShortcut("betterworkspace:batchdownload",
                         I18n.tr("Batch download v2 - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:batchdownload", false);

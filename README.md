@@ -199,6 +199,14 @@ checkbox here, if this window is open, so that one shortcut affects both windows
 other way of changing a layer's visibility (the main Layers panel, or a checkbox here) still only
 affects the one window it was changed in.
 
+## Area in the status bar
+
+JOSM's bottom status bar gets an extra **area** field right after distance, so it reads latitude,
+longitude, heading, angle, distance, area, name. It shows the area of the selected closed ways (or,
+with only relations selected, multipolygons), and `--` when there's nothing with an area. It's
+calculated exactly like the measurement plugin's **Selection Area**, so both always show the same
+number.
+
 ## Multi-validation prep and the todo-plugin bridge
 
 **Multi-validation prep** looks at the layer directly below the currently active one in the Layers

@@ -14,7 +14,7 @@ final class QuickTmsAction extends JosmAction {
 
     QuickTmsAction() {
         super(I18n.tr("Quick TMS..."), "betterworkspace/quick-tms",
-                I18n.tr("Preview a TMS imagery layer for this session only, without saving it to your imagery list"),
+                I18n.tr("Preview a TMS imagery layer for this session only, without saving it to your imagery list (BetterWorkspace)"),
                 Shortcut.registerShortcut("betterworkspace:quicktms",
                         I18n.tr("Quick TMS... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:quicktms", false);

@@ -44,7 +44,7 @@ final class CreateFilterFromTagAction extends AbstractAction {
         super(I18n.tr("Create filter from Key/Value"));
         this.propertiesDialog = propertiesDialog;
         putValue(SHORT_DESCRIPTION,
-                I18n.tr("Add a new Filters-panel entry matching the key and value of the selected tag"));
+                I18n.tr("Add a new Filters-panel entry matching the key and value of the selected tag (BetterWorkspace)"));
         // Same icon as the Filters panel itself (images/dialogs/filter.svg in JOSM core).
         new ImageProvider("dialogs/filter").getResource().attachImageIcon(this, true);
     }

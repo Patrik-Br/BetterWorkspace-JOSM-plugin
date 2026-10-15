@@ -451,8 +451,8 @@ final class TmImageryOffsetSync {
                 projectLabel, p.displacement, p.center);
         layer.getDisplaySettings().setOffsetBookmark(bookmark);
         String message = p.projectId == null
-                ? I18n.tr("Applied the imagery''s embedded offset.")
-                : I18n.tr("Applied HOT Tasking Manager project #{0}''s imagery offset.", String.valueOf(p.projectId));
+                ? I18n.tr("Applied the imagery''s embedded offset. (BetterWorkspace)")
+                : I18n.tr("Applied HOT Tasking Manager project #{0}''s imagery offset. (BetterWorkspace)", String.valueOf(p.projectId));
         new Notification(message)
                 .setIcon(JOptionPane.INFORMATION_MESSAGE)
                 .setDuration(Notification.TIME_SHORT)

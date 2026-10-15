@@ -539,7 +539,7 @@ final class TodoBehaviorSync {
         private void notifyIfAllDone(List<Object> todo, Collection<Object> done) {
             if (!todo.isEmpty() && done.size() >= todo.size()) {
                 SwingUtilities.invokeLater(() ->
-                        new Notification(I18n.tr("Todo list complete - every item is marked done."))
+                        new Notification(I18n.tr("Todo list complete - every item is marked done. (BetterWorkspace)"))
                                 .setIcon(JOptionPane.INFORMATION_MESSAGE)
                                 .setDuration(Notification.TIME_SHORT)
                                 .show());

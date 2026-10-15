@@ -27,7 +27,7 @@ public abstract class BwTest extends Test {
     private boolean skip;
 
     protected BwTest(String ruleId, String name, String description) {
-        super(name, description);
+        super(name, description + " (BetterWorkspace)"); // shown as the rule's tooltip in JOSM's own validator preferences
         this.ruleId = ruleId;
     }
 

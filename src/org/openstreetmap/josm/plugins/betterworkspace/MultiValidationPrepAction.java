@@ -25,7 +25,7 @@ final class MultiValidationPrepAction extends JosmAction {
 
     MultiValidationPrepAction() {
         super(I18n.tr("Multivalidation prep (add task borders to todo)"), null,
-                I18n.tr("Switch to layer below, select all ways, add to todo list, switch back."),
+                I18n.tr("Switch to layer below, select all ways, add to todo list, switch back. (BetterWorkspace)"),
                 Shortcut.registerShortcut("betterworkspace:multivalidationprep",
                         I18n.tr("Multivalidation prep - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 false);

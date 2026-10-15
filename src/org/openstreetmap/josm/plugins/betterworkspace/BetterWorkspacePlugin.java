@@ -105,8 +105,10 @@ public class BetterWorkspacePlugin extends Plugin {
             // up to 30s - this user's JOSM loads 70+ plugins
             safely("todo behavior sync", () -> TodoBehaviorSync.installWhenReady(newFrame, 120));
             safely("create-filter-from-tag menu hook", () -> CreateFilterFromTagAction.install(newFrame));
+            safely("status bar area field", () -> StatusBarArea.install(newFrame));
         } else {
             safely("secondary map view close", SecondaryMapViewAction::closeIfOpen);
+            safely("status bar area field removal", StatusBarArea::uninstall);
         }
     }
 
@@ -145,9 +147,9 @@ public class BetterWorkspacePlugin extends Plugin {
     private static final class ArrangePanelsAction extends JosmAction {
         ArrangePanelsAction() {
             super(I18n.tr("Arrange side panels..."), "betterworkspace/arrange-panels",
-                    I18n.tr("Change the top-to-bottom order of the panels docked on the right side"),
+                    I18n.tr("Change the top-to-bottom order of the panels docked on the right side (BetterWorkspace)"),
                     Shortcut.registerShortcut("betterworkspace:arrangepanels",
-                            I18n.tr("Arrange side panels..."), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
+                            I18n.tr("Arrange side panels... - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                     true, "betterworkspace:arrangepanels", false);
         }
 

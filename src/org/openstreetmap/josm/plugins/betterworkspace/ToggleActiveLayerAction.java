@@ -17,7 +17,7 @@ final class ToggleActiveLayerAction extends JosmAction {
 
     ToggleActiveLayerAction() {
         super(I18n.tr("Toggle active layer visibility"), null,
-                I18n.tr("Toggle the visibility of the currently active layer."),
+                I18n.tr("Toggle the visibility of the currently active layer. (BetterWorkspace)"),
                 Shortcut.registerShortcut("betterworkspace:togglelayer",
                         I18n.tr("Toggle active layer visibility - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 false);

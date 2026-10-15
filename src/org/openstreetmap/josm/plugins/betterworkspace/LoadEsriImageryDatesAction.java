@@ -113,7 +113,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
 
     LoadEsriImageryDatesAction() {
         super(I18n.tr("Load Esri Imagery Date Grid"), "betterworkspace/esri-imagery-dates",
-                I18n.tr("Load Esri World Imagery's acquisition-date footprints for the current view as a data layer"),
+                I18n.tr("Load Esri World Imagery's acquisition-date footprints for the current view as a data layer (BetterWorkspace)"),
                 Shortcut.registerShortcut("betterworkspace:esriimagerydates",
                         I18n.tr("Load Esri Imagery Date Grid - BetterWorkspace"), KeyEvent.CHAR_UNDEFINED, Shortcut.NONE),
                 true, "betterworkspace:esriimagerydates", false);
