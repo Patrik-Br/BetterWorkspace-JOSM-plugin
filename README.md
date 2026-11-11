@@ -25,7 +25,9 @@ running a search. If you also have the standard **todo** plugin (or a compatible
 marking an item done there keeps it visible in the list instead of removing it — see [Keeping
 completed todo items visible](#keeping-completed-todo-items-visible) below. It also automatically
 applies a HOT Tasking Manager project's imagery offset when you lock a task and open it in JOSM —
-see [HOT Tasking Manager imagery offset](#hot-tasking-manager-imagery-offset) below.
+see [HOT Tasking Manager imagery offset](#hot-tasking-manager-imagery-offset) below. And it lets
+JOSM display **WebP imagery** — see [WebP imagery](#webp-imagery)
+below.
 
 ## Menu structure
 
@@ -116,6 +118,14 @@ instead, e.g. `https://example.com/{z}/{x}/{y}.png#offset=-12.34,9.87&name=Drone
 without an offset, `https://example.com/{z}/{x}/{y}.png#name=Drone imagery 2026`. A second `#`
 (`...#offset=-12.34,9.87#name=Drone imagery 2026`) works too. The name is used both as the layer's
 title in the Layers panel and as the upload `source` tag. This works independently of the offset preference above.
+
+## WebP imagery
+
+JOSM can't display `.webp` imagery on its own, because Java has no WebP decoder. BetterWorkspace
+includes one ([TwelveMonkeys](https://github.com/haraldk/TwelveMonkeys), BSD-3-Clause), so WebP
+TMS/WMS/WMTS layers just work. There's nothing to enable, and nothing is downloaded at runtime.
+
+Only the WebP decoder is added. Every other image format is still read exactly as before.
 
 ## Batch download v2
 
@@ -245,6 +255,10 @@ applied immediately, no separate Apply step. Hover a rule for its full descripti
 This plugin was built with the help of Claude, Anthropic's AI chatbot, used throughout for design,
 implementation, and debugging.
 
+WebP support comes from [TwelveMonkeys](https://github.com/haraldk/TwelveMonkeys) by Harald
+Kuhr, bundled under the BSD 3-Clause License. Its license text ships inside the plugin jar as
+`META-INF/LICENSE-TwelveMonkeys.txt`, and in this repo as `lib/twelvemonkeys/LICENSE.txt`.
+
 ## Architecture
 
 | File | Purpose |
@@ -253,6 +267,7 @@ implementation, and debugging.
 | `ArrangePanelsDialog.java` / `PanelReorderer.java` | Reorder the docked side panels; order remembered across restarts |
 | `LoadTmTaskGridAction.java` | Loads a HOT TM project's task grid, including private/draft projects |
 | `TmImageryOffsetSync.java` | Auto-applies a HOT TM project's imagery offset when its task is opened in JOSM |
+| `WebPSupport.java` | Registers the bundled TwelveMonkeys WebP decoder (`lib/twelvemonkeys/`, merged into the jar by `build.bat`/`build.sh`) with Java, so JOSM can read `.webp` tiles |
 | `SetTmApiTokenAction.java` / `TmApiToken.java` | Save/use your personal HOT TM API token |
 | `ToggleActiveLayerAction.java` | Toggle the visibility of the currently active layer |
 | `MultiValidationPrepAction.java` / `TodoBridge.java` | Select the layer-below's ways and hand them to the todo plugin |

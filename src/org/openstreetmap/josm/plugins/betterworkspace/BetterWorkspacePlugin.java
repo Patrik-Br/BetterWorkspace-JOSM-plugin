@@ -40,6 +40,9 @@ public class BetterWorkspacePlugin extends Plugin {
     public BetterWorkspacePlugin(PluginInformation info) {
         super(info);
 
+        // First, so the decoder is in place before JOSM restores any .webp imagery layers.
+        safely("WebP imagery support", WebPSupport::install);
+
         safely("residential-multiple-place-nodes validator", () -> OsmValidator.addTest(ResidentialMultiplePlaceNodes.class));
         safely("hamlet/village tagging mismatch validator", () -> OsmValidator.addTest(HamletVillageTaggingMismatch.class));
         safely("highway classification mismatch validator", () -> OsmValidator.addTest(HighwayClassificationMismatch.class));
