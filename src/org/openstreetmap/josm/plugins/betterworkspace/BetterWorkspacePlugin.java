@@ -35,10 +35,14 @@ import org.openstreetmap.josm.tools.Shortcut;
  */
 public class BetterWorkspacePlugin extends Plugin {
 
+    /** Plugin-Version from MANIFEST.MF, as read by JOSM - see {@link #userAgent()}. */
+    private static String version;
+
     private final JMenuItem arrangePanelsItem;
 
     public BetterWorkspacePlugin(PluginInformation info) {
         super(info);
+        version = info.version;
 
         // First, so the decoder is in place before JOSM restores any .webp imagery layers.
         safely("WebP imagery support", WebPSupport::install);
@@ -113,6 +117,12 @@ public class BetterWorkspacePlugin extends Plugin {
             safely("secondary map view close", SecondaryMapViewAction::closeIfOpen);
             safely("status bar area field removal", StatusBarArea::uninstall);
         }
+    }
+
+    /** User-Agent for this plugin's own HTTP requests, e.g. {@code BetterWorkspace-JOSMPlugin/1.3.6}. */
+    static String userAgent() {
+        String v = version;
+        return v == null || v.isEmpty() ? "BetterWorkspace-JOSMPlugin" : "BetterWorkspace-JOSMPlugin/" + v;
     }
 
     // Isolates one startup step so a bug or a JOSM-core API change in it is logged and skipped

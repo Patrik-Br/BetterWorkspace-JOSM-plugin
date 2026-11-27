@@ -66,8 +66,11 @@ final class TmImageryOffsetSync {
 
     private static final String TM_API = "https://tasking-manager-production-api.hotosm.org/api/v2";
     private static final Pattern PROJECT_HASHTAG = Pattern.compile("#hotosm-project-(\\d+)", Pattern.CASE_INSENSITIVE);
-    /** Matches an "offset=east,north" appended as a URL fragment - see {@link #applyEmbeddedUrlOffsetIfPresent}. */
-    private static final Pattern URL_OFFSET = Pattern.compile("offset=(-?[\\d.]+),(-?[\\d.]+)", Pattern.CASE_INSENSITIVE);
+    /** Matches an "offset=..." URL fragment parameter - see {@link #applyEmbeddedUrlOffsetIfPresent}. */
+    private static final Pattern URL_OFFSET = Pattern.compile("[#&]offset=([^#&]*)", Pattern.CASE_INSENSITIVE);
+    /** An offset value: two numbers (east, north) separated by "," or ";", spaces allowed - see {@link #parseOffsetValue}. */
+    private static final Pattern OFFSET_VALUE = Pattern.compile(
+            "\\s*([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))\\s*[,;]\\s*([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))\\s*");
     /** Matches a "name=..." URL fragment parameter - see {@link #applyEmbeddedUrlNameIfPresent}. */
     private static final Pattern URL_NAME = Pattern.compile("[#&]name=([^#&]*)", Pattern.CASE_INSENSITIVE);
     /** An imagery-type/zoom prefix like {@code tms[22]:}, {@code tms[1,22]:} or {@code wms:} in front of a URL. */
@@ -164,9 +167,14 @@ final class TmImageryOffsetSync {
                 JsonObject project = fetchJson(TM_API + "/projects/" + projectId + "/");
                 String extraIdParams = project.isNull("extraIdParams") ? null : project.getString("extraIdParams", null);
                 String imageryRef = project.isNull("imagery") ? null : project.getString("imagery", null);
-                double[] offsetMeters = parseOffsetMeters(extraIdParams);
-                if (offsetMeters == null || imageryRef == null || imageryRef.isEmpty()) {
+                String offsetValue = offsetParam(extraIdParams);
+                if (offsetValue == null || imageryRef == null || imageryRef.isEmpty()) {
                     return; // no offset configured for this project (the common case) - nothing to do
+                }
+                double[] offsetMeters = parseOffsetValue(offsetValue);
+                if (offsetMeters == null) {
+                    SwingUtilities.invokeLater(() -> warnUnreadableOffset(offsetValue));
+                    return;
                 }
                 Bounds bounds = taskBounds;
                 if (bounds == null) {
@@ -182,27 +190,56 @@ final class TmImageryOffsetSync {
         });
     }
 
-    /** Parses {@code offset=east,north} (meters) out of a query-string-like extraIdParams value, e.g. {@code disabled_features=buildings&offset=-10,5}. */
-    private static double[] parseOffsetMeters(String extraIdParams) {
+    /** The raw {@code offset=...} value out of a query-string-like extraIdParams value, e.g. {@code disabled_features=buildings&offset=-10,5}, or null if there is none. */
+    static String offsetParam(String extraIdParams) {
         if (extraIdParams == null || extraIdParams.isEmpty()) {
             return null;
         }
         for (String part : extraIdParams.split("&")) {
             int eq = part.indexOf('=');
-            if (eq < 0 || !"offset".equals(part.substring(0, eq))) {
-                continue;
-            }
-            String[] xy = part.substring(eq + 1).split(",");
-            if (xy.length != 2) {
-                return null;
-            }
-            try {
-                return new double[] {Double.parseDouble(xy[0].trim()), Double.parseDouble(xy[1].trim())};
-            } catch (NumberFormatException ex) {
-                return null;
+            if (eq >= 0 && "offset".equals(part.substring(0, eq))) {
+                return part.substring(eq + 1);
             }
         }
         return null;
+    }
+
+    /**
+     * Parses an offset value - east and north in meters - into {@code {east, north}}, or null if it
+     * isn't exactly two numbers. The separator can be {@code ,} (iD's own format, {@code -3.15,1.90})
+     * or {@code ;}, with or without spaces ({@code -3.15; 1.90}). Decimals must use a dot: a decimal
+     * comma like {@code -3,15;1,90} is rejected rather than misread, so the caller can warn about it.
+     * %-escapes (e.g. a {@code %20} space) are decoded first.
+     */
+    static double[] parseOffsetValue(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        Matcher m = OFFSET_VALUE.matcher(urlDecodeLenient(raw));
+        if (!m.matches()) {
+            return null;
+        }
+        return new double[] {Double.parseDouble(m.group(1)), Double.parseDouble(m.group(2))};
+    }
+
+    /** An {@code offset=} was given but couldn't be read - say so, instead of silently applying nothing. */
+    private static void warnUnreadableOffset(String raw) {
+        String value = urlDecodeLenient(raw).trim();
+        new Notification(I18n.tr("Couldn''t read the imagery offset \"{0}\", so no offset was applied. "
+                + "Write it as east,north in meters, e.g. offset=-3.15,1.90 or offset=-3.15; 1.90 (BetterWorkspace)", value))
+                .setIcon(JOptionPane.WARNING_MESSAGE)
+                .setDuration(Notification.TIME_LONG)
+                .show();
+        Logging.warn("BetterWorkspace: unreadable imagery offset \"" + value + "\" - expected east,north in meters");
+    }
+
+    /** URL-decodes, or returns the input as typed if it has a malformed %-escape. */
+    private static String urlDecodeLenient(String s) {
+        try {
+            return URLDecoder.decode(s, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException ex) {
+            return s;
+        }
     }
 
     /**
@@ -224,7 +261,7 @@ final class TmImageryOffsetSync {
     private static JsonObject fetchJson(String urlStr) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) URI.create(urlStr).toURL().openConnection();
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.1.2");
+        conn.setRequestProperty("User-Agent", BetterWorkspacePlugin.userAgent());
         String auth = TmApiToken.authorizationHeader();
         if (auth != null) {
             conn.setRequestProperty("Authorization", auth);
@@ -281,27 +318,33 @@ final class TmImageryOffsetSync {
             return false;
         }
         String url = layer.getInfo().getUrl();
-        int hash = url == null ? -1 : url.indexOf('#');
-        if (hash < 0) {
+        String offsetValue = embeddedUrlOffsetValue(url);
+        if (offsetValue == null) {
             return false;
         }
-        Matcher m = URL_OFFSET.matcher(url.substring(hash + 1));
-        if (!m.find()) {
+        double[] offsetMeters = parseOffsetValue(offsetValue);
+        if (offsetMeters == null) {
+            warnUnreadableOffset(offsetValue);
             return false;
         }
         Bounds bounds = currentViewBounds();
         if (bounds == null) {
             return false;
         }
-        try {
-            double[] offsetMeters = {Double.parseDouble(m.group(1)), Double.parseDouble(m.group(2))};
-            LatLon center = bounds.getCenter();
-            EastNorth displacement = metersToDisplacement(offsetMeters);
-            applyOffset(layer, new PendingOffset(null, url, displacement, center));
-            return true;
-        } catch (NumberFormatException ex) {
-            return false;
+        LatLon center = bounds.getCenter();
+        EastNorth displacement = metersToDisplacement(offsetMeters);
+        applyOffset(layer, new PendingOffset(null, url, displacement, center));
+        return true;
+    }
+
+    /** The raw {@code offset=...} value from the URL's fragment, or null if there is none. */
+    static String embeddedUrlOffsetValue(String url) {
+        int hash = url == null ? -1 : url.indexOf('#');
+        if (hash < 0) {
+            return null;
         }
+        Matcher m = URL_OFFSET.matcher(url.substring(hash));
+        return m.find() ? m.group(1) : null;
     }
 
     /**
@@ -340,12 +383,7 @@ final class TmImageryOffsetSync {
         if (!m.find()) {
             return null;
         }
-        String name;
-        try {
-            name = URLDecoder.decode(m.group(1), StandardCharsets.UTF_8).trim();
-        } catch (IllegalArgumentException ex) { // malformed %-escape - use it as typed
-            name = m.group(1).trim();
-        }
+        String name = urlDecodeLenient(m.group(1)).trim();
         return name.isEmpty() ? null : name;
     }
 

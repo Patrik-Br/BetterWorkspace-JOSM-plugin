@@ -107,6 +107,11 @@ There are two ways to set the offset, checked in this order:
    private projects specifically. Fine for public projects, or if you can't change the
    imagery URL, when using free public imagery like Bing or Esri.
 
+Either way, the two numbers (east first, then north, in meters) can be separated by a comma or a
+semicolon, with or without spaces: `-3.15,1.90`, `-3.15, 1.90` and `-3.15; 1.90` all work. Use a dot
+for decimals. If an offset is there but can't be read (e.g. `-3,15;1,90` with decimal commas), a
+warning tells you so and no offset is applied.
+
 Turn the whole feature off via the `betterworkspace.tmimageryoffset.enabled` preference (on by
 default) in JOSM's own **Preferences → Advanced Preferences**.
 

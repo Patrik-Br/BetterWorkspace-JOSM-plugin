@@ -288,7 +288,7 @@ final class LoadEsriImageryDatesAction extends JosmAction {
         HttpURLConnection conn = (HttpURLConnection)
                 URI.create(url.substring(0, url.length() - 1)).toURL().openConnection();
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("User-Agent", "BetterWorkspace-JOSMPlugin/1.0.1");
+        conn.setRequestProperty("User-Agent", BetterWorkspacePlugin.userAgent());
         conn.setConnectTimeout(15000);
         conn.setReadTimeout(30000);
 
